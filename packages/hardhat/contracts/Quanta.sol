@@ -14,6 +14,8 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 
+import 'base64-sol/base64.sol';
+
 contract QUANTA is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumerBaseV2  {
     
     using Counters for Counters.Counter;
@@ -102,19 +104,55 @@ contract QUANTA is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
         //request random words for this token
         uint256 requestId = requestRandomWords();
         RequestIdForTokenId[address][uint] = requestId;
+        RandomWordsForRequestId[requestId] = [1];
 
         //mint 1 token to msg.sender with the encoded requestid as data
         _mint(msg.sender, id, 1, abi.encode(requestId));
         
-
-
-
 //        bytes32 predictableRandom = keccak256(abi.encodePacked( blockhash(block.number-1), msg.sender, address(this) ));
 //        color[id] = bytes2(predictableRandom[0]) | ( bytes2(predictableRandom[1]) >> 8 ) | ( bytes3(predictableRandom[2]) >> 16 );
 //        chubbiness[id] = 35+((55*uint256(uint8(predictableRandom[3])))/255);
 
         return id;
     }
+
+//uri ...
+//
+    //https://eips.ethereum.org/EIPS/eip-1155#metadata
+  function uri(uint256 id) public view override returns (string memory) {
+      require(_exists(id), "not exist");
+      string memory name = string(abi.encodePacked('quanta ',id.toString()));
+      string memory description = string(abi.encodePacked('This quanta'));// is the color #',color[id].toColor(),' with a chubbiness of ',uint2str(chubbiness[id]),'!!!'));
+      string memory image = "";//Base64.encode(bytes(generateSVGofTokenById(id)));
+
+      return
+          string(
+              abi.encodePacked(
+                'data:application/json;base64,',
+                Base64.encode(
+                    bytes(
+                          abi.encodePacked(
+                              '{"name":"',
+                              name,
+                              '", "description":"',
+                              description,
+                              '", "attributes": [{"trait_type": "color", "value": "#',
+                              color[id].toColor(),
+                              '"},{"trait_type": "chubbiness", "value": ',
+                              uint2str(chubbiness[id]),
+                              '}], "owner":"',
+                              (uint160(ownerOf(id))).toHexString(20),
+                              '", "image": "',
+                              'data:image/svg+xml;base64,',
+                              image,
+                              '"}'
+                          )
+                        )
+                    )
+              )
+          );
+  }
+
 
     function setURI(string memory newuri) public onlyOwner {
         _setURI(newuri);
