@@ -1,12 +1,19 @@
 pragma solidity >=0.8.0 <0.9.0;
 //SPDX-License-Identifier: MIT
 
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+//quantumtekh.eth
+//scaffold-eth challenge 6 - svg nft
+//coded copied from loogies-svg-nft branh of scaffold-eth
 
+//imports
+//
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import 'base64-sol/base64.sol';
+
+//ERC1155 extensions
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 
@@ -14,10 +21,15 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 
-import 'base64-sol/base64.sol';
+
 
 contract QUANTA is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumerBaseV2  {
-    
+
+//usings
+//    
+    using Strings for uint256;
+    using HexStrings for uint160;
+    using ToColor for bytes3;    
     using Counters for Counters.Counter;
 
 //chainlink VRF
@@ -59,19 +71,28 @@ contract QUANTA is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
 
 // private Variables...
 //
-    Counters.Counter private tokenIds;
-    uint private maxTokenId = 96;
+    Counters.Counter private _tokenIds;
+    uint8 private _maxTokenId = 96;
     uint256 public Price = 236978;
 
 // mappings..
 // https://solidity-by-example.org/mapping/
+//
+    //color for token id
+    mapping(uint256 => bytes3) public ColorForTokenId;
+
+    //will be used to allow user to mint addtional tokens of the id they own
+    mapping(uint256 => uint8) public MaxTokenIdAmount;
 
     //VRF Random Values for Each Token 
-    mapping(uint256 => uint256[]) public RandomWordsForRequestId;
-    mapping(address => mapping(uint => uint256)) public RequestIdForTokenId;
+        //requestid => randomwords
+    mapping(uint256 => uint256[]) public RandomWordsForRequestId; 
+          //address =>       (tokenid => requestid)
+    mapping(address => mapping(uint256 => uint256)) public RequestIdForTokenId;
     
-    //will be used to allow user to mint addtional tokens of the id they own
-    mapping(uint => uint) public MaxTokenIdAmount;
+//public Variables
+//
+    bool public UseVRF = false;
 
 // Constructor...
     constructor(uint64 subscriptionId) VRFConsumerBaseV2(vrfCoordinator) ERC1155("") {
@@ -81,8 +102,18 @@ contract QUANTA is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
 
 //helpers ...
 //
-    function public SetPrice(uint256 _price) {
+    function SetPrice(uint256 _price) public onlyOwner {
         Price = _price;
+    }
+
+    function EnableVRF() public onlyOwner {
+        UseVRF = !UseVRF;
+    }
+
+    function GetRegenForId(uint256 id) public view returns(uint256) {
+        require(exists(id), "token does not exist");
+        uint256 supply4id = totalSupply(id);
+        return supply4id - MaxTokenIdAmount[id];
     }
 
 // public functions ...
@@ -101,58 +132,125 @@ contract QUANTA is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
         _tokenIds.increment();
         uint256 id = _tokenIds.current();
         
-        //request random words for this token
-        uint256 requestId = requestRandomWords();
-        RequestIdForTokenId[address][uint] = requestId;
-        RandomWordsForRequestId[requestId] = [1];
+        if(UseVRF){
+            //request random words for this token
+            uint256 requestId = requestRandomWords();
+            RequestIdForTokenId[address(msg.sender)][id] = requestId;
+            RandomWordsForRequestId[requestId] = [1];
+        }
+
+        MaxTokenIdAmount[id] = 1;
 
         //mint 1 token to msg.sender with the encoded requestid as data
-        _mint(msg.sender, id, 1, abi.encode(requestId));
+        _mint(msg.sender, id, 1, "");
         
-//        bytes32 predictableRandom = keccak256(abi.encodePacked( blockhash(block.number-1), msg.sender, address(this) ));
-//        color[id] = bytes2(predictableRandom[0]) | ( bytes2(predictableRandom[1]) >> 8 ) | ( bytes3(predictableRandom[2]) >> 16 );
-//        chubbiness[id] = 35+((55*uint256(uint8(predictableRandom[3])))/255);
+        InitializeQuanta(msg.sender,id);
 
         return id;
+    }
+
+    
+    function InitializeQuanta(address sender, uint256 id) internal {
+        bytes32 predictableRandom = keccak256(abi.encodePacked( blockhash(block.number-1), sender, address(this), id ));
+        ColorForTokenId[id] = bytes2(predictableRandom[0]) | ( bytes2(predictableRandom[1]) >> 8 ) | ( bytes3(predictableRandom[2]) >> 16 );
+        MaxTokenIdAmount[id] = 1;
     }
 
 //uri ...
 //
     //https://eips.ethereum.org/EIPS/eip-1155#metadata
-  function uri(uint256 id) public view override returns (string memory) {
-      require(_exists(id), "not exist");
-      string memory name = string(abi.encodePacked('quanta ',id.toString()));
-      string memory description = string(abi.encodePacked('This quanta'));// is the color #',color[id].toColor(),' with a chubbiness of ',uint2str(chubbiness[id]),'!!!'));
-      string memory image = "";//Base64.encode(bytes(generateSVGofTokenById(id)));
+    function uri(uint256 id) public view override returns (string memory) {
+        require(exists(id), "token does not exist");
 
-      return
-          string(
-              abi.encodePacked(
+        string memory regen4id = uint2str(GetRegenForId(id));
+        string memory name = string(abi.encodePacked('quanta ',id.toString()));
+        string memory description = string(abi.encodePacked('This quanta is the color #',ColorForTokenId[id].toColor(),' with a regeneration ability of ',regen4id,'!!!'));
+        string memory image = Base64.encode(bytes(generateSVGofTokenById(id)));
+
+        return
+            string(
+                abi.encodePacked(
                 'data:application/json;base64,',
                 Base64.encode(
                     bytes(
-                          abi.encodePacked(
-                              '{"name":"',
-                              name,
-                              '", "description":"',
-                              description,
-                              '", "attributes": [{"trait_type": "color", "value": "#',
-                              color[id].toColor(),
-                              '"},{"trait_type": "chubbiness", "value": ',
-                              uint2str(chubbiness[id]),
-                              '}], "owner":"',
-                              (uint160(ownerOf(id))).toHexString(20),
-                              '", "image": "',
-                              'data:image/svg+xml;base64,',
-                              image,
-                              '"}'
-                          )
+                            abi.encodePacked(
+                                '{"name":"',
+                                name,
+                                '", "description":"',
+                                description,
+                                '", "attributes": [{"trait_type": "color", "value": "#',
+                                ColorForTokenId[id].toColor(),
+                                '"},{"trait_type": "regeneration", "value": ',
+                                regen4id,
+                                '}], "image": "',
+                                'data:image/svg+xml;base64,',
+                                image,
+                                '"}'
+                            )
                         )
                     )
-              )
-          );
-  }
+                )
+            );
+    }
 
+// svg...
+//
+    function generateSVGofTokenById(uint256 id) internal view returns (string memory) {
+
+        string memory svg = string(abi.encodePacked(
+            '<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">',
+                renderTokenById(id),
+            '</svg>'
+        ));
+
+        return svg;
+    }
+
+    // Visibility is `public` to enable it being called by other contracts for composition.
+    function renderTokenById(uint256 id) public view returns (string memory) {
+        uint256 rx = 35+((55*uint256(uint8(GetRegenForId(id))))/255);
+        string memory render = string(abi.encodePacked(
+            '<g id="eye1">',
+                '<ellipse stroke-width="3" ry="29.5" rx="29.5" id="svg_1" cy="154.5" cx="181.5" stroke="#000" fill="#fff"/>',
+                '<ellipse ry="3.5" rx="2.5" id="svg_3" cy="154.5" cx="173.5" stroke-width="3" stroke="#000" fill="#000000"/>',
+            '</g>',
+            '<g id="head">',
+                '<ellipse fill="#',
+                ColorForTokenId[id].toColor(),
+                '" stroke-width="3" cx="204.5" cy="211.80065" id="svg_5" rx="',
+                rx.toString(),
+                '" ry="51.80065" stroke="#000"/>',
+            '</g>',
+            '<g id="eye2">',
+                '<ellipse stroke-width="3" ry="29.5" rx="29.5" id="svg_2" cy="168.5" cx="209.5" stroke="#000" fill="#fff"/>',
+                '<ellipse ry="3.5" rx="3" id="svg_4" cy="169.5" cx="208" stroke-width="3" fill="#000000" stroke="#000"/>',
+            '</g>'
+            ));
+
+        return render;
+    }
+
+    function uint2str(uint _i) internal pure returns (string memory _uintAsString) {
+        if (_i == 0) {
+            return "0";
+        }
+        uint j = _i;
+        uint len;
+        while (j != 0) {
+            len++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(len);
+        uint k = len;
+        while (_i != 0) {
+            k = k-1;
+            uint8 temp = (48 + uint8(_i - _i / 10 * 10));
+            bytes1 b1 = bytes1(temp);
+            bstr[k] = b1;
+            _i /= 10;
+        }
+        return string(bstr);
+    }
 
     function setURI(string memory newuri) public onlyOwner {
         _setURI(newuri);
@@ -188,7 +286,7 @@ contract QUANTA is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
     }
 
     function fulfillRandomWords(
-    uint256 requestId
+    uint256 requestId,
     uint256[] memory randomWords
     ) internal override {
         RandomWordsForRequestId[requestId] = randomWords;
@@ -203,3 +301,33 @@ contract QUANTA is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 }
+
+//library
+//
+    library ToColor {
+        bytes16 internal constant ALPHABET = '0123456789abcdef';
+
+        function toColor(bytes3 value) internal pure returns (string memory) {
+        bytes memory buffer = new bytes(6);
+        for (uint256 i = 0; i < 3; i++) {
+            buffer[i*2+1] = ALPHABET[uint8(value[i]) & 0xf];
+            buffer[i*2] = ALPHABET[uint8(value[i]>>4) & 0xf];
+        }
+        return string(buffer);
+        }
+    }
+
+    library HexStrings {
+        bytes16 internal constant ALPHABET = '0123456789abcdef';
+
+        function toHexString(uint256 value, uint256 length) internal pure returns (string memory) {
+            bytes memory buffer = new bytes(2 * length + 2);
+            buffer[0] = '0';
+            buffer[1] = 'x';
+            for (uint256 i = 2 * length + 1; i > 1; --i) {
+                buffer[i] = ALPHABET[value & 0xf];
+                value >>= 4;
+            }
+            return string(buffer);
+        }
+    }
