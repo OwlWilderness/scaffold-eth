@@ -1,4 +1,4 @@
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity >=0.8.13 <0.9.0;
 //SPDX-License-Identifier: MIT
 
 //quantumtekh.eth
@@ -12,6 +12,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import 'base64-sol/base64.sol';
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 //ERC1155 extensions
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
@@ -23,7 +24,7 @@ import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 
 
 
-contract QUANTA is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumerBaseV2  {
+contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumerBaseV2  {
 
 //usings
 //    
@@ -31,6 +32,9 @@ contract QUANTA is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
     using HexStrings for uint160;
     using ToColor for bytes3;    
     using Counters for Counters.Counter;
+    using SafeMath for uint;
+    using SafeMath for uint256;
+    using SafeMath for uint8;
 
 //chainlink VRF
     // Your subscription ID.
@@ -72,7 +76,7 @@ contract QUANTA is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
 // private Variables...
 //
     Counters.Counter private _tokenIds;
-    uint8 private _maxTokenId = 96;
+    uint8 private _maxTokenId = 10;
     uint256 public Price = 236978;
 
 // mappings..
@@ -93,6 +97,7 @@ contract QUANTA is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
 //public Variables
 //
     bool public UseVRF = false;
+    uint256 public LastMintedTokenId;
 
 // Constructor...
     constructor(uint64 subscriptionId) VRFConsumerBaseV2(vrfCoordinator) ERC1155("") {
@@ -100,20 +105,50 @@ contract QUANTA is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
         s_subscriptionId = subscriptionId;
     }
 
-//helpers ...
+//controllers
 //
+    function SetMaxTokenId(uint8 _newMax) public onlyOwner {
+        require(_maxTokenId > LastMintedTokenId, "no going back");
+        _maxTokenId = _newMax;
+    }
     function SetPrice(uint256 _price) public onlyOwner {
         Price = _price;
     }
 
     function EnableVRF() public onlyOwner {
         UseVRF = !UseVRF;
+    }    
+
+//helpers ...
+//
+    function GetMaxTokenId() public returns (uint256) {
+        return _maxTokenId;
     }
 
     function GetRegenForId(uint256 id) public view returns(uint256) {
         require(exists(id), "token does not exist");
         uint256 supply4id = totalSupply(id);
         return supply4id - MaxTokenIdAmount[id];
+    }
+
+    //get token info for address (total balance, token ids, token id balance)
+    function GetTokenIdsForAddress(address _address) public view returns (uint256, string memory, string memory) {
+        uint256 totalBalance;
+        //uint [] ids;
+        string memory ids = string(abi.encodePacked("["));
+        string memory bals = string(abi.encodePacked("["));
+
+        for(uint8 i = 0; i <= LastMintedTokenId; i++) {
+            uint256 tokenBalance = balanceOf(_address, i);
+            if (tokenBalance > 0) {
+                totalBalance = totalBalance + tokenBalance;
+                ids = string(abi.encodePacked(ids, uint2str(i), ','));
+                bals = string(abi.encodePacked(bals, uint2str(tokenBalance), ','));
+            }
+        }
+        ids = string(abi.encodePacked(ids,'0]'));
+        bals = string(abi.encodePacked(bals,'0]'));
+        return (totalBalance, ids, bals);
     }
 
 // public functions ...
@@ -141,11 +176,13 @@ contract QUANTA is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
 
         MaxTokenIdAmount[id] = 1;
 
-        //mint 1 token to msg.sender with the encoded requestid as data
+        //mint 1 token to msg.sender
         _mint(msg.sender, id, 1, "");
         
         InitializeQuanta(msg.sender,id);
-
+        
+        LastMintedTokenId = id;
+        
         return id;
     }
 
@@ -211,19 +248,19 @@ contract QUANTA is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
         uint256 rx = 35+((55*uint256(uint8(GetRegenForId(id))))/255);
         string memory render = string(abi.encodePacked(
             '<g id="eye1">',
-                '<ellipse stroke-width="3" ry="29.5" rx="29.5" id="svg_1" cy="154.5" cx="181.5" stroke="#000" fill="#fff"/>',
-                '<ellipse ry="3.5" rx="2.5" id="svg_3" cy="154.5" cx="173.5" stroke-width="3" stroke="#000" fill="#000000"/>',
+                '<ellipse strokeWidth="3" ry="29.5" rx="29.5" id="svg_1" cy="154.5" cx="181.5" stroke="#000" fill="#fff"/>',
+                '<ellipse ry="3.5" rx="2.5" id="svg_3" cy="154.5" cx="173.5" strokeWidth="3" stroke="#000" fill="#000000"/>',
             '</g>',
             '<g id="head">',
                 '<ellipse fill="#',
                 ColorForTokenId[id].toColor(),
-                '" stroke-width="3" cx="204.5" cy="211.80065" id="svg_5" rx="',
+                '" strokeWidth="3" cx="204.5" cy="211.80065" id="svg_5" rx="',
                 rx.toString(),
                 '" ry="51.80065" stroke="#000"/>',
             '</g>',
             '<g id="eye2">',
-                '<ellipse stroke-width="3" ry="29.5" rx="29.5" id="svg_2" cy="168.5" cx="209.5" stroke="#000" fill="#fff"/>',
-                '<ellipse ry="3.5" rx="3" id="svg_4" cy="169.5" cx="208" stroke-width="3" fill="#000000" stroke="#000"/>',
+                '<ellipse strokeWidth="3" ry="29.5" rx="29.5" id="svg_2" cy="168.5" cx="209.5" stroke="#000" fill="#fff"/>',
+                '<ellipse ry="3.5" rx="3" id="svg_4" cy="169.5" cx="208" strokeWidth="3" fill="#000000" stroke="#000"/>',
             '</g>'
             ));
 
@@ -256,19 +293,23 @@ contract QUANTA is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
         _setURI(newuri);
     }
 
+    //owner of a token id may mint more of that specific token id to themselfs or others
     function mint(address account, uint256 id, uint256 amount, bytes memory data)
         public
-        onlyOwner
     {
+        require(balanceOf(msg.sender, id) > 0, "hmm, token not found in inventory");
+        require(amount > 0, "amount must be greater than 0");
+        require(amount <= GetRegenForId(id), "unable to regen further");
+
         _mint(account, id, amount, data);
     }
 
-    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
-        public
-        onlyOwner
-    {
-        _mintBatch(to, ids, amounts, data);
-    }
+    //function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
+    //    public
+    //    onlyOwner
+    //{
+    //    _mintBatch(to, ids, amounts, data);
+    //}
 
 
 // vrf functions...

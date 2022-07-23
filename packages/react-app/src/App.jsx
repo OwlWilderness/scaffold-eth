@@ -9,7 +9,7 @@ import {
   useUserProviderAndSigner,
 } from "eth-hooks";
 import { useExchangeEthPrice } from "eth-hooks/dapps/dex";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { Link, Route, Switch, useLocation } from "react-router-dom";
 import "./App.css";
 import {
@@ -29,10 +29,13 @@ import externalContracts from "./contracts/external_contracts";
 // contracts
 import deployedContracts from "./contracts/hardhat_contracts.json";
 import { Transactor, Web3ModalSetup } from "./helpers";
-import { Home, ExampleUI, Hints, Subgraph } from "./views";
+import { Home, Gallery} from "./views";
 import { useStaticJsonRPC } from "./hooks";
+import ReactDOMServer from 'react-dom/server';
 
 const { ethers } = require("ethers");
+//var parse = require('html-react-parser');
+
 /*
     Welcome to 🏗 scaffold-eth !
 
@@ -56,7 +59,7 @@ const { ethers } = require("ethers");
 const initialNetwork = NETWORKS.localhost; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
 
 // 😬 Sorry for all the console logging
-const DEBUG = true;
+const DEBUG = false;
 const NETWORKCHECK = true;
 const USE_BURNER_WALLET = true; // toggle burner wallet feature
 const USE_NETWORK_SELECTOR = false;
@@ -157,22 +160,39 @@ function App(props) {
   const mainnetContracts = useContractLoader(mainnetProvider, contractConfig);
 
   // If you want to call a function on a new block
-  useOnBlock(mainnetProvider, () => {
-    console.log(`⛓ A new mainnet block is here: ${mainnetProvider._lastBlockNumber}`);
-  });
+  //useOnBlock(mainnetProvider, () => {
+  //  console.log(`⛓ A new mainnet block is here: ${mainnetProvider._lastBlockNumber}`);
+  //});
 
   // Then read your DAI balance like:
-  const myMainnetDAIBalance = useContractReader(mainnetContracts, "DAI", "balanceOf", [
-    "0x34aA3F359A9D614239015126635CE7732c18fDF3",
-  ]);
+  //const myMainnetDAIBalance = useContractReader(mainnetContracts, "DAI", "balanceOf", [
+  //  "0x34aA3F359A9D614239015126635CE7732c18fDF3",
+  //]);
 
   // keep track of a variable from the contract in the local React state:
-  const purpose = useContractReader(readContracts, "YourContract", "purpose");
+  const balance = useContractReader(readContracts, "Quanta", "GetTotalBalanceForAddress", [address]);
+  //console.log("readcontracts", readContracts);
+  const image = useContractReader(readContracts, "Quanta", "renderTokenById", [2]);;
+  const html = '<svg width="400" height="400">' + image + '</svg>'
+  console.log("html", html);
+
+  const myRef = useRef();
+  useEffect(() => {
+    myRef.current.innerHTML = html;
+  });
+
+  //const purpose = useContractReader(readContracts, "YourContract", "purpose");
 
   /*
   const addressFromENS = useResolveName(mainnetProvider, "austingriffith.eth");
   console.log("🏷 Resolved austingriffith.eth as:",addressFromENS)
   */
+
+  //
+  // 🧠 This effect will update yourCollectibles by polling when your balance changes
+  //
+  const yourBalance = balance && balance.toNumber && balance.toNumber();
+  const [yourQuanta, setQuanta] = useState();
 
   //
   // 🧫 DEBUG 👨🏻‍🔬
@@ -198,7 +218,7 @@ function App(props) {
       console.log("💵 yourMainnetBalance", yourMainnetBalance ? ethers.utils.formatEther(yourMainnetBalance) : "...");
       console.log("📝 readContracts", readContracts);
       console.log("🌍 DAI contract on mainnet:", mainnetContracts);
-      console.log("💵 yourMainnetDAIBalance", myMainnetDAIBalance);
+      //console.log("💵 yourMainnetDAIBalance", myMainnetDAIBalance);
       console.log("🔐 writeContracts", writeContracts);
     }
   }, [
@@ -211,7 +231,7 @@ function App(props) {
     writeContracts,
     mainnetContracts,
     localChainId,
-    myMainnetDAIBalance,
+    //myMainnetDAIBalance,
   ]);
 
   const loadWeb3Modal = useCallback(async () => {
@@ -293,24 +313,34 @@ function App(props) {
         <Menu.Item key="/debug">
           <Link to="/debug">Debug Contracts</Link>
         </Menu.Item>
-        <Menu.Item key="/hints">
-          <Link to="/hints">Hints</Link>
+        <Menu.Item key="/debugQuanta">
+          <Link to="/debugQuanta">Debug Contracts</Link>
         </Menu.Item>
-        <Menu.Item key="/exampleui">
-          <Link to="/exampleui">ExampleUI</Link>
-        </Menu.Item>
-        <Menu.Item key="/mainnetdai">
-          <Link to="/mainnetdai">Mainnet DAI</Link>
-        </Menu.Item>
-        <Menu.Item key="/subgraph">
-          <Link to="/subgraph">Subgraph</Link>
-        </Menu.Item>
+
       </Menu>
 
       <Switch>
         <Route exact path="/">
           {/* pass in any web3 props to this Home component. For example, yourLocalBalance */}
-          <Home yourLocalBalance={yourLocalBalance} readContracts={readContracts} />
+    
+        <div>
+          <div>
+
+          <div ref={myRef} />
+   
+            ?
+            </div>
+<div>
+            <svg width="400" height="400">
+              <g id="eye1"><ellipse strokeWidth="3" ry="29.5" rx="29.5" id="svg_1" cy="154.5" cx="181.5" stroke="#000" fill="#fff"/>
+              <ellipse ry="3.5" rx="2.5" id="svg_3" cy="154.5" cx="173.5" strokeWidth="3" stroke="#000" fill="#000000"/></g>
+              <g id="head"><ellipse fill="#c677dd" strokeWidth="3" cx="204.5" cy="211.80065" id="svg_5" rx="35" ry="51.80065" stroke="#000"/></g>
+              <g id="eye2"><ellipse strokeWidth="3" ry="29.5" rx="29.5" id="svg_2" cy="168.5" cx="209.5" stroke="#000" fill="#fff"/>
+              <ellipse ry="3.5" rx="3" id="svg_4" cy="169.5" cx="208" strokeWidth="3" fill="#000000" stroke="#000"/></g>
+            </svg>
+            </div>
+        </div>
+    
         </Route>
         <Route exact path="/debug">
           {/*
@@ -329,58 +359,18 @@ function App(props) {
             contractConfig={contractConfig}
           />
         </Route>
-        <Route path="/hints">
-          <Hints
-            address={address}
-            yourLocalBalance={yourLocalBalance}
-            mainnetProvider={mainnetProvider}
-            price={price}
-          />
-        </Route>
-        <Route path="/exampleui">
-          <ExampleUI
-            address={address}
-            userSigner={userSigner}
-            mainnetProvider={mainnetProvider}
-            localProvider={localProvider}
-            yourLocalBalance={yourLocalBalance}
-            price={price}
-            tx={tx}
-            writeContracts={writeContracts}
-            readContracts={readContracts}
-            purpose={purpose}
-          />
-        </Route>
-        <Route path="/mainnetdai">
+        <Route exact path="/debugQuanta">
           <Contract
-            name="DAI"
-            customContract={mainnetContracts && mainnetContracts.contracts && mainnetContracts.contracts.DAI}
+            name="Quanta"
+            price={price}
             signer={userSigner}
-            provider={mainnetProvider}
+            provider={localProvider}
             address={address}
-            blockExplorer="https://etherscan.io/"
+            blockExplorer={blockExplorer}
             contractConfig={contractConfig}
-            chainId={1}
           />
-          {/*
-            <Contract
-              name="UNI"
-              customContract={mainnetContracts && mainnetContracts.contracts && mainnetContracts.contracts.UNI}
-              signer={userSigner}
-              provider={mainnetProvider}
-              address={address}
-              blockExplorer="https://etherscan.io/"
-            />
-            */}
-        </Route>
-        <Route path="/subgraph">
-          <Subgraph
-            subgraphUri={props.subgraphUri}
-            tx={tx}
-            writeContracts={writeContracts}
-            mainnetProvider={mainnetProvider}
-          />
-        </Route>
+        </Route>        
+
       </Switch>
 
       <ThemeSwitch />
