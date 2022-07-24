@@ -3,6 +3,7 @@ import React from "react";
 
 import { NETWORK } from "../constants";
 
+const DEBUG = false;
 function NetworkDisplay({
   NETWORKCHECK,
   localChainId,
@@ -96,7 +97,7 @@ function NetworkDisplay({
     );
   }
 
-  console.log({ networkDisplay });
+  if(DEBUG)console.log({ networkDisplay });
 
   return networkDisplay;
 }

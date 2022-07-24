@@ -77,7 +77,7 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
 //
     Counters.Counter private _tokenIds;
     uint8 private _maxTokenId = 10;
-    uint256 public Price = 236978;
+    uint256 public Price = 2369780;
 
 // mappings..
 // https://solidity-by-example.org/mapping/
@@ -135,8 +135,8 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
     function GetTokenIdsForAddress(address _address) public view returns (uint256, string memory, string memory) {
         uint256 totalBalance;
         //uint [] ids;
-        string memory ids = string(abi.encodePacked("["));
-        string memory bals = string(abi.encodePacked("["));
+        string memory ids; // = string(abi.encodePacked("["));
+        string memory bals; // = string(abi.encodePacked("["));
 
         for(uint8 i = 0; i <= LastMintedTokenId; i++) {
             uint256 tokenBalance = balanceOf(_address, i);
@@ -146,8 +146,8 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
                 bals = string(abi.encodePacked(bals, uint2str(tokenBalance), ','));
             }
         }
-        ids = string(abi.encodePacked(ids,'0]'));
-        bals = string(abi.encodePacked(bals,'0]'));
+        ids = string(abi.encodePacked(ids,'0'));
+        bals = string(abi.encodePacked(bals,'0'));
         return (totalBalance, ids, bals);
     }
 
@@ -245,25 +245,31 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
 
     // Visibility is `public` to enable it being called by other contracts for composition.
     function renderTokenById(uint256 id) public view returns (string memory) {
-        uint256 rx = 35+((55*uint256(uint8(GetRegenForId(id))))/255);
-        string memory render = string(abi.encodePacked(
-            '<g id="eye1">',
-                '<ellipse strokeWidth="3" ry="29.5" rx="29.5" id="svg_1" cy="154.5" cx="181.5" stroke="#000" fill="#fff"/>',
-                '<ellipse ry="3.5" rx="2.5" id="svg_3" cy="154.5" cx="173.5" strokeWidth="3" stroke="#000" fill="#000000"/>',
-            '</g>',
-            '<g id="head">',
-                '<ellipse fill="#',
-                ColorForTokenId[id].toColor(),
-                '" strokeWidth="3" cx="204.5" cy="211.80065" id="svg_5" rx="',
-                rx.toString(),
-                '" ry="51.80065" stroke="#000"/>',
-            '</g>',
-            '<g id="eye2">',
-                '<ellipse strokeWidth="3" ry="29.5" rx="29.5" id="svg_2" cy="168.5" cx="209.5" stroke="#000" fill="#fff"/>',
-                '<ellipse ry="3.5" rx="3" id="svg_4" cy="169.5" cx="208" strokeWidth="3" fill="#000000" stroke="#000"/>',
-            '</g>'
+        uint256 regen4Id = GetRegenForId(id);
+        uint256 rx = 35+((55*regen4Id)/255);
+        string memory rxStr = uint2str(rx);
+        string memory regen4IdStr = uint2str(regen4Id);
+        string memory sup = uint2str(totalSupply(id));
+
+
+        string memory str1 = string(abi.encodePacked(
+            '<g id="eye1"><ellipse stroke-width="3" ry="29.5" rx="29.5" id="svg_1" cy="154.5" cx="181.5" stroke="#000" fill="#fff"/><ellipse ry="3.5" rx="2.5" id="svg_3" cy="154.5" cx="173.5" stroke-width="3" stroke="#000" fill="#000000"/></g><g id="head"><ellipse fill="#'
+            ,ColorForTokenId[id].toColor()
+            ,'" stroke-width="3" cx="204.5" cy="211.80065" id="svg_5" rx="'
+            ,rxStr
+            ,'" ry="51.80065" stroke="#000"/></g><g id="eye2"><ellipse stroke-width="3" ry="29.5" rx="29.5" id="svg_2" cy="168.5" cx="209.5" stroke="#000" fill="#fff"/><ellipse ry="3.5" rx="3" id="svg_4" cy="169.5" cx="208" stroke-width="3" fill="#000000" stroke="#000"/></g>'
+            ));
+            
+
+        string memory str2 = string(abi.encodePacked(
+            '<text x="175" y="215" fill="white">'
+            ,regen4IdStr
+            ,'</text></g><text x="180" y="245" fill="white">'
+            ,sup
+            ,'</text>'
             ));
 
+        string memory render = string(abi.encodePacked(str1, str2));
         return render;
     }
 

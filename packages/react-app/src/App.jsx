@@ -135,6 +135,8 @@ function App(props) {
 
   // For more hooks, check out 🔗eth-hooks at: https://www.npmjs.com/package/eth-hooks
 
+  const isSigner = injectedProvider && injectedProvider.getSigner && injectedProvider.getSigner()._isSigner;
+
   // The transactor wraps transactions and provides notificiations
   const tx = Transactor(userSigner, gasPrice);
 
@@ -316,9 +318,20 @@ function App(props) {
         <Route exact path="/">
           {/* pass in any web3 props to this Home component. For example, yourLocalBalance */}
     
+          <div style={{ maxWidth: 820, margin: "auto", marginTop: 32, paddingBottom: 32 }}>
+              {(
+                <Button type={"primary"} onClick={()=>{
+                  tx( writeContracts.Quanta.mintItem({value: 230000000}) )
+                }}>MINT</Button>
+              )}
+
+            </div>
+
         <Gallery
           readContracts={readContracts}
-          address={address} />
+          address={address}
+          balance={yourLocalBalance}
+           />
 
         </Route>
         <Route exact path="/debug">
