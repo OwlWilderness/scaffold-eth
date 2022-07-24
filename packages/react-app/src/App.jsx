@@ -172,14 +172,7 @@ function App(props) {
   // keep track of a variable from the contract in the local React state:
   const balance = useContractReader(readContracts, "Quanta", "GetTotalBalanceForAddress", [address]);
   //console.log("readcontracts", readContracts);
-  const image = useContractReader(readContracts, "Quanta", "renderTokenById", [2]);;
-  const html = '<svg width="400" height="400">' + image + '</svg>'
-  console.log("html", html);
-
-  const myRef = useRef();
-  useEffect(() => {
-    myRef.current.innerHTML = html;
-  });
+  
 
   //const purpose = useContractReader(readContracts, "YourContract", "purpose");
 
@@ -323,24 +316,10 @@ function App(props) {
         <Route exact path="/">
           {/* pass in any web3 props to this Home component. For example, yourLocalBalance */}
     
-        <div>
-          <div>
+        <Gallery
+          readContracts={readContracts}
+          address={address} />
 
-          <div ref={myRef} />
-   
-            ?
-            </div>
-<div>
-            <svg width="400" height="400">
-              <g id="eye1"><ellipse strokeWidth="3" ry="29.5" rx="29.5" id="svg_1" cy="154.5" cx="181.5" stroke="#000" fill="#fff"/>
-              <ellipse ry="3.5" rx="2.5" id="svg_3" cy="154.5" cx="173.5" strokeWidth="3" stroke="#000" fill="#000000"/></g>
-              <g id="head"><ellipse fill="#c677dd" strokeWidth="3" cx="204.5" cy="211.80065" id="svg_5" rx="35" ry="51.80065" stroke="#000"/></g>
-              <g id="eye2"><ellipse strokeWidth="3" ry="29.5" rx="29.5" id="svg_2" cy="168.5" cx="209.5" stroke="#000" fill="#fff"/>
-              <ellipse ry="3.5" rx="3" id="svg_4" cy="169.5" cx="208" strokeWidth="3" fill="#000000" stroke="#000"/></g>
-            </svg>
-            </div>
-        </div>
-    
         </Route>
         <Route exact path="/debug">
           {/*
