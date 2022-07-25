@@ -130,17 +130,17 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
     function SetMaxTokenIdAmount(uint256 id, uint16 newMax) public {
         require(exists(id), "token does not exist");
         require(balanceOf(msg.sender, id) > 0, "token not found in inventory");
-        require(newMax > MaxTokenIdAmount[id], "new token max not high enough - burn some or increase");
+        require(newMax > totalSupply(id), "new token max not high enough - burn some or increase");
         MaxTokenIdAmount[id] = newMax;
     }
 
 //helpers ...
 //
-    function GetRandomWorkdsForAddressAndTokenId(address adr, uint256 id) public view returns (uint256[] memory){
-        return GetRandomWordsForRequestId(RequestIdForTokenId[adr][id]);
+    function GetWordsForId(address adr, uint256 id) public view returns (uint256[] memory){
+        return GetWordsForRq(RequestIdForTokenId[adr][id]);
     }
 
-    function GetRandomWordsForRequestId(uint256 req) public view returns (uint256[] memory){
+    function GetWordsForRq(uint256 req) public view returns (uint256[] memory){
         return RandomWordsForRequestId[req];
     }
 
@@ -269,7 +269,6 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
         string memory regen4IdStr = uint2str(regen4Id);
         string memory sup = uint2str(totalSupply(id));
 
-
         string memory str1 = string(abi.encodePacked(
             '<g id="eye1">'
                 ,'<ellipse stroke-width="3" ry="29.5" rx="29.5" id="svg_1" cy="154.5" cx="181.5" stroke="#000" fill="#fff"/>'
@@ -291,7 +290,7 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
                 ,TextColorForTokenId[id]
                 ,'">'
                 ,regen4IdStr
-            ,'</text></g><text x="180" y="245" fill="'
+            ,'</text><text x="180" y="245" fill="'
                 ,TextColorForTokenId[id]
                 ,'">'
                 ,sup
