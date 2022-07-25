@@ -84,16 +84,18 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
 //
     //color for token id
     mapping(uint256 => bytes3) public ColorForTokenId;
+          //tokenId => Color
+    mapping(uint256 => string) public TextColorForTokenId;
 
     //will be used to allow user to mint addtional tokens of the id they own
-    mapping(uint256 => uint8) public MaxTokenIdAmount;
+    mapping(uint256 => uint16) public MaxTokenIdAmount;
 
     //VRF Random Values for Each Token 
         //requestid => randomwords
     mapping(uint256 => uint256[]) public RandomWordsForRequestId; 
           //address =>       (tokenid => requestid)
     mapping(address => mapping(uint256 => uint256)) public RequestIdForTokenId;
-    
+
 //public Variables
 //
     bool public UseVRF = false;
@@ -119,8 +121,29 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
         UseVRF = !UseVRF;
     }    
 
+    function SetColorForTokenId(uint256 id, string memory newColor) public {
+        require(exists(id), "token does not exist");
+        require(balanceOf(msg.sender, id) > 0, "token not found in inventory");
+        TextColorForTokenId[id] = newColor;
+    }
+    
+    function SetMaxTokenIdAmount(uint256 id, uint16 newMax) public {
+        require(exists(id), "token does not exist");
+        require(balanceOf(msg.sender, id) > 0, "token not found in inventory");
+        require(newMax > MaxTokenIdAmount[id], "new token max not high enough - burn some or increase");
+        MaxTokenIdAmount[id] = newMax;
+    }
+
 //helpers ...
 //
+    function GetRandomWorkdsForAddressAndTokenId(address adr, uint256 id) public view returns (uint256[] memory){
+        return GetRandomWordsForRequestId(RequestIdForTokenId[adr][id]);
+    }
+
+    function GetRandomWordsForRequestId(uint256 req) public view returns (uint256[] memory){
+        return RandomWordsForRequestId[req];
+    }
+
     function GetMaxTokenId() public returns (uint256) {
         return _maxTokenId;
     }
@@ -128,7 +151,7 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
     function GetRegenForId(uint256 id) public view returns(uint256) {
         require(exists(id), "token does not exist");
         uint256 supply4id = totalSupply(id);
-        return supply4id - MaxTokenIdAmount[id];
+        return  MaxTokenIdAmount[id] - supply4id;
     }
 
     //get token info for address (total balance, token ids, token id balance)
@@ -153,10 +176,7 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
 
 // public functions ...
 //
-    function mintItem()
-        public payable
-        returns (uint256)
-    {
+    function mintItem() public payable returns (uint256) {
         //require sent amout meets price requirement
         require(msg.value >= Price, "not enough matic");
 
@@ -170,11 +190,9 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
         if(UseVRF){
             //request random words for this token
             uint256 requestId = requestRandomWords();
-            RequestIdForTokenId[address(msg.sender)][id] = requestId;
+            RequestIdForTokenId[msg.sender][id] = requestId;
             RandomWordsForRequestId[requestId] = [1];
         }
-
-        MaxTokenIdAmount[id] = 1;
 
         //mint 1 token to msg.sender
         _mint(msg.sender, id, 1, "");
@@ -186,11 +204,11 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
         return id;
     }
 
-    
     function InitializeQuanta(address sender, uint256 id) internal {
         bytes32 predictableRandom = keccak256(abi.encodePacked( blockhash(block.number-1), sender, address(this), id ));
         ColorForTokenId[id] = bytes2(predictableRandom[0]) | ( bytes2(predictableRandom[1]) >> 8 ) | ( bytes3(predictableRandom[2]) >> 16 );
-        MaxTokenIdAmount[id] = 1;
+        TextColorForTokenId[id] = "purple";
+        MaxTokenIdAmount[id] = 255;
     }
 
 //uri ...
@@ -243,7 +261,7 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
         return svg;
     }
 
-    // Visibility is `public` to enable it being called by other contracts for composition.
+    // render svg by token id
     function renderTokenById(uint256 id) public view returns (string memory) {
         uint256 regen4Id = GetRegenForId(id);
         uint256 rx = 35+((55*regen4Id)/255);
@@ -253,23 +271,35 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
 
 
         string memory str1 = string(abi.encodePacked(
-            '<g id="eye1"><ellipse stroke-width="3" ry="29.5" rx="29.5" id="svg_1" cy="154.5" cx="181.5" stroke="#000" fill="#fff"/><ellipse ry="3.5" rx="2.5" id="svg_3" cy="154.5" cx="173.5" stroke-width="3" stroke="#000" fill="#000000"/></g><g id="head"><ellipse fill="#'
-            ,ColorForTokenId[id].toColor()
-            ,'" stroke-width="3" cx="204.5" cy="211.80065" id="svg_5" rx="'
-            ,rxStr
-            ,'" ry="51.80065" stroke="#000"/></g><g id="eye2"><ellipse stroke-width="3" ry="29.5" rx="29.5" id="svg_2" cy="168.5" cx="209.5" stroke="#000" fill="#fff"/><ellipse ry="3.5" rx="3" id="svg_4" cy="169.5" cx="208" stroke-width="3" fill="#000000" stroke="#000"/></g>'
+            '<g id="eye1">'
+                ,'<ellipse stroke-width="3" ry="29.5" rx="29.5" id="svg_1" cy="154.5" cx="181.5" stroke="#000" fill="#fff"/>'
+                ,'<ellipse ry="3.5" rx="2.5" id="svg_3" cy="154.5" cx="173.5" stroke-width="3" stroke="#000" fill="#000000"/>'
+            ,'</g><g id="head">'
+                ,'<ellipse fill="#'
+                ,ColorForTokenId[id].toColor()
+                ,'" stroke-width="3" cx="204.5" cy="211.80065" id="svg_5" rx="'
+                ,rxStr
+                ,'" ry="51.80065" stroke="#000"/></g>'
+            ,'<g id="eye2">'
+                ,'<ellipse stroke-width="3" ry="29.5" rx="29.5" id="svg_2" cy="168.5" cx="209.5" stroke="#000" fill="#fff"/>'
+                ,'<ellipse ry="3.5" rx="3" id="svg_4" cy="169.5" cx="208" stroke-width="3" fill="#000000" stroke="#000"/></g>'
             ));
             
 
         string memory str2 = string(abi.encodePacked(
-            '<text x="175" y="215" fill="white">'
-            ,regen4IdStr
-            ,'</text></g><text x="180" y="245" fill="white">'
-            ,sup
+            '<text x="175" y="215" fill="'
+                ,TextColorForTokenId[id]
+                ,'">'
+                ,regen4IdStr
+            ,'</text></g><text x="180" y="245" fill="'
+                ,TextColorForTokenId[id]
+                ,'">'
+                ,sup
             ,'</text>'
             ));
 
         string memory render = string(abi.encodePacked(str1, str2));
+
         return render;
     }
 

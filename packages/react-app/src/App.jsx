@@ -305,11 +305,11 @@ function App(props) {
         <Menu.Item key="/">
           <Link to="/">App Home</Link>
         </Menu.Item>
-        <Menu.Item key="/debug">
-          <Link to="/debug">Debug Contracts</Link>
-        </Menu.Item>
+        {/*<Menu.Item key="/debug">
+          <Link to="/debug">YourContract</Link>
+        </Menu.Item>*/}
         <Menu.Item key="/debugQuanta">
-          <Link to="/debugQuanta">Debug Contracts</Link>
+          <Link to="/debugQuanta">Loogies</Link>
         </Menu.Item>
 
       </Menu>
