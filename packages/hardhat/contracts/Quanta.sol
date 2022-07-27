@@ -121,7 +121,7 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
         UseVRF = !UseVRF;
     }    
 
-    function SetColorForTokenId(uint256 id, string memory newColor) public {
+    function SetTextColorForTokenId(uint256 id, string memory newColor) public {
         require(exists(id), "token does not exist");
         require(balanceOf(msg.sender, id) > 0, "token not found in inventory");
         TextColorForTokenId[id] = newColor;
