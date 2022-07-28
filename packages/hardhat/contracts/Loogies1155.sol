@@ -24,7 +24,7 @@ import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 
 
 
-contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumerBaseV2  {
+contract Loogies1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumerBaseV2  {
 
 //usings
 //    
@@ -77,7 +77,8 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
 //
     Counters.Counter private _tokenIds;
     uint8 private _maxTokenId = 10;
-    uint256 public Price = 2369780;
+    uint256 public Price = 23000000000000000;
+    uint256 public IncreaseMaxTokenIdAmtPrice = 69000000000000000;
 
 // mappings..
 // https://solidity-by-example.org/mapping/
@@ -88,13 +89,14 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
     mapping(uint256 => string) public TextColorForTokenId;
 
     //will be used to allow user to mint addtional tokens of the id they own
-    mapping(uint256 => uint16) public MaxTokenIdAmount;
+    mapping(uint256 => uint256) public MaxTokenIdAmount;
 
     //VRF Random Values for Each Token 
         //requestid => randomwords
     mapping(uint256 => uint256[]) public RandomWordsForRequestId; 
           //address =>       (tokenid => requestid)
     mapping(address => mapping(uint256 => uint256)) public RequestIdForTokenId;
+    mapping(uint256 => bool) public HasGrown;
 
 //public Variables
 //
@@ -113,8 +115,13 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
         require(_maxTokenId > LastMintedTokenId, "no going back");
         _maxTokenId = _newMax;
     }
+
     function SetPrice(uint256 _price) public onlyOwner {
         Price = _price;
+    }
+    
+    function SetIncTokenAmtPrice(uint256 _price) public onlyOwner {
+        IncreaseMaxTokenIdAmtPrice = _price;
     }
 
     function EnableVRF() public onlyOwner {
@@ -127,11 +134,35 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
         TextColorForTokenId[id] = newColor;
     }
     
-    function SetMaxTokenIdAmount(uint256 id, uint16 newMax) public {
+    function SetMaxTokenIdAmount(uint256 id, uint16 newMax) public payable {
+        require(msg.value >= IncreaseMaxTokenIdAmtPrice, "not enough funds");
         require(exists(id), "token does not exist");
         require(balanceOf(msg.sender, id) > 0, "token not found in inventory");
         require(newMax > totalSupply(id), "new token max not high enough - burn some or increase");
         MaxTokenIdAmount[id] = newMax;
+    }
+
+    function GrowAll() public {
+        for(uint8 i = 1; i <= LastMintedTokenId; i++) {
+            if(balanceOf(msg.sender, i) > 0){
+                Grow(i);
+            }
+        }
+    }
+
+    function Grow(uint256 id) public {
+        address addr = msg.sender;
+        require(balanceOf(addr, id) > 0, "token not found in inventory");
+        if(HasGrown[id]){
+            return;
+        }
+
+        uint256[] memory words = GetWordsForId(addr, id);
+        if (words.length > 0){
+            uint256 modWord = (words[0] % 253) + 2;
+            MaxTokenIdAmount[id] = modWord;
+            HasGrown[id] = true;
+        } 
     }
 
 //helpers ...
@@ -178,7 +209,7 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
 //
     function mintItem() public payable returns (uint256) {
         //require sent amout meets price requirement
-        require(msg.value >= Price, "not enough matic");
+        require(msg.value >= Price, "not enough funds");
 
         //require max tokens have not been minted
         require( _tokenIds.current() < _maxTokenId, "all token ids have been claimed");
@@ -191,20 +222,20 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
             //request random words for this token
             uint256 requestId = requestRandomWords();
             RequestIdForTokenId[msg.sender][id] = requestId;
-            RandomWordsForRequestId[requestId] = [1];
+            //RandomWordsForRequestId[requestId] = [1];
         }
-
+        
         //mint 1 token to msg.sender
         _mint(msg.sender, id, 1, "");
         
-        InitializeQuanta(msg.sender,id);
+        Initialize(msg.sender,id);
         
         LastMintedTokenId = id;
         
         return id;
     }
 
-    function InitializeQuanta(address sender, uint256 id) internal {
+    function Initialize(address sender, uint256 id) internal {
         bytes32 predictableRandom = keccak256(abi.encodePacked( blockhash(block.number-1), sender, address(this), id ));
         ColorForTokenId[id] = bytes2(predictableRandom[0]) | ( bytes2(predictableRandom[1]) >> 8 ) | ( bytes3(predictableRandom[2]) >> 16 );
         TextColorForTokenId[id] = "purple";
@@ -218,8 +249,8 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
         require(exists(id), "token does not exist");
 
         string memory regen4id = uint2str(GetRegenForId(id));
-        string memory name = string(abi.encodePacked('quanta ',id.toString()));
-        string memory description = string(abi.encodePacked('This quanta is the color #',ColorForTokenId[id].toColor(),' with a regeneration ability of ',regen4id,'!!!'));
+        string memory name = string(abi.encodePacked('loogie 1155 - ',id.toString()));
+        string memory description = string(abi.encodePacked('This Loogie 1155 is the color #',ColorForTokenId[id].toColor(),' with a regeneration ability of ',regen4id,'!!!'));
         string memory image = Base64.encode(bytes(generateSVGofTokenById(id)));
 
         return
@@ -329,14 +360,14 @@ contract Quanta is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFConsumer
     }
 
     //owner of a token id may mint more of that specific token id to themselfs or others
-    function mint(address account, uint256 id, uint256 amount, bytes memory data)
-        public
-    {
+    function mint(address account, uint256 id) public {
         require(balanceOf(msg.sender, id) > 0, "hmm, token not found in inventory");
-        require(amount > 0, "amount must be greater than 0");
-        require(amount <= GetRegenForId(id), "unable to regen further");
+        //require(amount > 0, "amount must be greater than 0");
+        //require(amount <= GetRegenForId(id), "unable to regen further");
+        require(GetRegenForId(id) > 0, "unable to regen further");
 
-        _mint(account, id, amount, data);
+        bytes memory data;
+        _mint(account, id, 1, data);
     }
 
     //function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)

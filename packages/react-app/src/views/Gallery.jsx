@@ -16,24 +16,26 @@ function Gallery({readContracts, address, balance}) {
     const [Qtys, setQtys] = useState([]);
     const [Html, setHtml] = useState([]);
 
-    //const image = useContractReader(readContracts, "Quanta", "renderTokenById", [1])
+    const totBalance = useContractReader(readContracts, "Loogies1155", "GetTokenIdsForAddress", [address]);
+    if(DEBUG) console.log("totBalance", totBalance);
+    //const image = useContractReader(readContracts, "Loogies1155", "renderTokenById", [1])
     //const html = '<svg width="400" height="400">' + image + '</svg>'
     //console.log("html", html);
    
     const myRef = useRef();
     useEffect(async () => {
       async function getTokenIds() {
-        if(readContracts && readContracts.Quanta && address){
-        //const result = useContractReader(readContracts, "Quanta", "GetTokenIdsForAddress", [address])
-        const result =  await readContracts.Quanta.GetTokenIdsForAddress(address);
+        if(readContracts && readContracts.Loogies1155 && address){
+        //const result = useContractReader(readContracts, "Loogies1155", "GetTokenIdsForAddress", [address])
+        //const result =  await readContracts.Loogies1155.GetTokenIdsForAddress(address);
           
-        if(result){
-          if(DEBUG) console.log("result 0",result[0].toNumber());
-          if(DEBUG) console.log("result 1",result[1].split(","));
-          if(DEBUG) console.log("result 2",result[2].split(","));
+        if(totBalance){
+          if(DEBUG) console.log("result 0",totBalance[0].toNumber());
+          if(DEBUG) console.log("result 1",totBalance[1].split(","));
+          if(DEBUG) console.log("result 2",totBalance[2].split(","));
 
-          setQty(result[0])
-          var Ids = result[1].split(",")
+          setQty(totBalance[0])
+          var Ids = totBalance[1].split(",")
           
           if(DEBUG) console.log("ids length", Ids.length);
           var html = '';
@@ -42,25 +44,26 @@ function Gallery({readContracts, address, balance}) {
 
             if(DEBUG) console.log("ID::",tokenId);
             if(tokenId > 0) {
-              var svg = await readContracts.Quanta.renderTokenById(tokenId);  
+              var svg = await readContracts.Loogies1155.renderTokenById(tokenId);  
+              var bal = await readContracts.Loogies1155.balanceOf(address, tokenId);
               if(svg){
                 if(DEBUG)console.log("svg", svg)
-                html = html + '<svg width="300" height="300">' + svg + '</svg>'
+                html = html + '<svg width="300" height="300">' 
+                + svg + '<text x="150" y="290" fill="purple">Id:' 
+                + String(tokenId) + '  Owned:' + String(bal) + '</text></svg>'  
                  
               }
             }
           }
           if(html) {
-            console.log("html", html)
+            if(DEBUG)console.log("html", html)
             myRef.current.innerHTML = html 
           }          
         }
       }    
     } 
     getTokenIds();
-    },[readContracts, balance]);
-
-
+    },[readContracts, balance, totBalance]);
 
     return (
     <div>

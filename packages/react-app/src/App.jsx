@@ -23,6 +23,7 @@ import {
   NetworkDisplay,
   FaucetHint,
   NetworkSwitch,
+  AddressInput
 } from "./components";
 import { NETWORKS, ALCHEMY_KEY } from "./constants";
 import externalContracts from "./contracts/external_contracts";
@@ -172,7 +173,7 @@ function App(props) {
   //]);
 
   // keep track of a variable from the contract in the local React state:
-  const balance = useContractReader(readContracts, "Quanta", "GetTotalBalanceForAddress", [address]);
+  const balance = useContractReader(readContracts, "Loogies1155", "GetTotalBalanceForAddress", [address]);
   //console.log("readcontracts", readContracts);
   
 
@@ -187,7 +188,7 @@ function App(props) {
   // 🧠 This effect will update yourCollectibles by polling when your balance changes
   //
   const yourBalance = balance && balance.toNumber && balance.toNumber();
-  const [yourQuanta, setQuanta] = useState();
+
 
   //
   // 🧫 DEBUG 👨🏻‍🔬
@@ -257,7 +258,16 @@ function App(props) {
     }
   }, [loadWeb3Modal]);
 
+  
+  const mintPrice = useContractReader(readContracts, "Loogies1155", "Price");
+  if(DEBUG && mintPrice) console.log("mintPrice", BigInt(mintPrice))
+
   const faucetAvailable = localProvider && localProvider.connection && targetNetwork.name.indexOf("local") !== -1;
+  const [walletAddr, setWalletAddr] = useState("");
+  const [tokenId, setTokenId] = useState("");
+  const [growId, setGrowId] = useState("");
+  const [colorId, setColorId] = useState("");
+  const [newColor, setNewColor] = useState("");
 
   return (
     <div className="App">
@@ -303,13 +313,10 @@ function App(props) {
       />
       <Menu style={{ textAlign: "center", marginTop: 20 }} selectedKeys={[location.pathname]} mode="horizontal">
         <Menu.Item key="/">
-          <Link to="/">App Home</Link>
+          <Link to="/">1155 Loogies</Link>
         </Menu.Item>
-        {/*<Menu.Item key="/debug">
-          <Link to="/debug">YourContract</Link>
-        </Menu.Item>*/}
-        <Menu.Item key="/debugQuanta">
-          <Link to="/debugQuanta">Loogies</Link>
+        <Menu.Item key="/debug">
+          <Link to="/debug">Debug Contract</Link>
         </Menu.Item>
 
       </Menu>
@@ -318,11 +325,57 @@ function App(props) {
         <Route exact path="/">
           {/* pass in any web3 props to this Home component. For example, yourLocalBalance */}
     
-          <div style={{ maxWidth: 820, margin: "auto", marginTop: 32, paddingBottom: 32 }}>
+          <div style={{ maxWidth: 820, margin: "auto", marginTop: 32, paddingBottom: 10 }}>
               {(
                 <Button type={"primary"} onClick={()=>{
-                  tx( writeContracts.Quanta.mintItem({value: 230000000}) )
-                }}>MINT</Button>
+                  tx( writeContracts.Loogies1155.mintItem({value: mintPrice}) )
+                }}>MINT ({mintPrice && String(parseFloat(ethers.utils.formatEther(mintPrice)).toFixed(4) )})</Button>
+              )}
+             
+            </div>
+
+            <div style={{ background:"#EBEBEB", maxWidth: 500, margin: "auto", marginTop: 15, paddingBottom: 10, paddingTop: 10, paddingLeft: 10, paddingRight: 10 }}>
+              <AddressInput
+                autoFocus
+                ensProvider={mainnetProvider}
+                placeholder="Enter Mint To Address"
+                value={walletAddr}
+                onChange={setWalletAddr}
+            />
+            
+            <input style={{marginRight: 10, marginTop: 10}} onChange={(e)=>{setTokenId(e.target.value)}} value={tokenId} type={"text"} placeholder="Token ID to Mint"></input>
+              {(
+                <Button type={"primary"} onClick={()=>{
+                  tx( writeContracts.Loogies1155.mint(walletAddr, tokenId) )
+                }}>MINT Another</Button>
+              )}
+
+            </div>
+
+            <div style={{ maxWidth: 500, margin: "auto", marginTop: 15, paddingBottom: 10 }}>
+            
+            <input style={{marginRight: 10}} onChange={(e)=>{setGrowId(e.target.value)}} value={growId} type={"text"} placeholder="Token ID to Grow"></input>
+              {(
+                <Button style={{marginRight: 10}} type={"primary"} onClick={()=>{
+                  tx( writeContracts.Loogies1155.Grow(growId) )
+                }}>Grow Single</Button>
+              )}
+              {(
+                <Button type={"primary"} onClick={()=>{
+                  tx( writeContracts.Loogies1155.GrowAll() )
+                }}>Grow ALL</Button>
+              )}
+
+            </div>
+
+            <div style={{background:"#EBEBEB", maxWidth: 500, margin: "auto", marginTop: 15, paddingBottom: 10, paddingTop: 10, paddingLeft: 10, paddingRight: 10 }}>
+            
+            <input style={{marginRight: 10}} onChange={(e)=>{setColorId(e.target.value)}} value={colorId} type={"text"} placeholder="Token ID to Change"></input>
+            <input style={{marginRight: 10}} onChange={(e)=>{setNewColor(e.target.value)}} value={newColor} type={"text"} placeholder="New Text Color (e.g. 'red')"></input>
+              {(
+                <Button style={{marginRight: 10, marginTop: 10}} type={"primary"} onClick={()=>{
+                  tx( writeContracts.Loogies1155.SetTextColorForTokenId(colorId, newColor) )
+                }}>Change Text Color for Id</Button>
               )}
 
             </div>
@@ -335,25 +388,8 @@ function App(props) {
 
         </Route>
         <Route exact path="/debug">
-          {/*
-                🎛 this scaffolding is full of commonly used components
-                this <Contract/> component will automatically parse your ABI
-                and give you a form to interact with it locally
-            */}
-
           <Contract
-            name="YourContract"
-            price={price}
-            signer={userSigner}
-            provider={localProvider}
-            address={address}
-            blockExplorer={blockExplorer}
-            contractConfig={contractConfig}
-          />
-        </Route>
-        <Route exact path="/debugQuanta">
-          <Contract
-            name="Quanta"
+            name="Loogies1155"
             price={price}
             signer={userSigner}
             provider={localProvider}
