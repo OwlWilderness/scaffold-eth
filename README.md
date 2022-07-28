@@ -1,11 +1,31 @@
-# 🏗 Scaffold-ETH
+# 🏗 1155 Loogies
 
-> everything you need to build on Ethereum! 🚀
+Mint an 1155 Loogie here: https://loogies1155.surge.sh/
 
-🧪 Quickly experiment with Solidity using a frontend that adapts to your smart contract:
+![image](https://user-images.githubusercontent.com/98717833/181402828-03656b34-e2a7-439f-8bc8-089c535681e3.png)
 
-![image](https://user-images.githubusercontent.com/2653167/124158108-c14ca380-da56-11eb-967e-69cde37ca8eb.png)
+## Overview
+These Loogies are built using an ERC 1155 token and deployed on Mumbai. The SVG image for each Loogie rendered thru the contract with a couple random features. 
+The first is the color determimed a predictible random number. The second is the Regen Number which determines how many tokens of that ID can be minted.  A Chainlink VRF request is created when minting and the user may Grow their token after minting.  This will set the Maxt Token Id Amount to a number between 2 and 255- the width of the Loogie will change accordingly.
 
+The top number in the loogie is the max amout able to be minted, the bottom number is the total number of Loogies minted.  These values are rendered as part of the NFT image and the color can be changed as to hide or contrast the text.  Below the NFT displays the ID and the total owned by this address.
+
+Any owner of a Token can mint more of that token to themselves or a friend and the width of that Loogie will decrease.
+
+## How to use
+- Click Mint to Mint a Loogie to yourself
+- After a few min Grow a specific loogie by entering the Id and clicking Grow Single 
+- OR Grow ALL your Loogies 
+- Mint to a Firend (or yourself) by entering the Address and the Token Id (shown below the image) to mint (Loogie must be Grown)
+- Change the Color of the numbers in the Loogie by entering the ID and new Color (Red, Yellow, Blue ... etc)
+- want more tokens??? use Debug Contracts and SetMaxTokenIdAmount by entering the token id, new ammount, and price (>.069)
+
+
+
+
+This project was built with scaffold-eth. 
+
+To learn how to build your own dapps:
 
 # 🏄‍♂️ Quick Start
 
