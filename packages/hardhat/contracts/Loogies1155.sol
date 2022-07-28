@@ -3,7 +3,8 @@ pragma solidity >=0.8.13 <0.9.0;
 
 //quantumtekh.eth
 //scaffold-eth challenge 6 - svg nft
-//coded copied from loogies-svg-nft branh of scaffold-eth
+//based of loogies-svg-nft branch of scaffold-eth
+//https://github.com/OwlWilderness/scaffold-eth/tree/loogies-svg-nft
 
 //imports
 //
@@ -69,7 +70,7 @@ contract Loogies1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFCon
 
     // For this example, retrieve 2 random values in one request.
     // Cannot exceed VRFCoordinatorV2.MAX_NUM_WORDS.
-    uint32 numWords =  5;
+    uint32 numWords =  1;
 
     VRFCoordinatorV2Interface COORDINATOR;
 
@@ -239,7 +240,7 @@ contract Loogies1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFCon
         bytes32 predictableRandom = keccak256(abi.encodePacked( blockhash(block.number-1), sender, address(this), id ));
         ColorForTokenId[id] = bytes2(predictableRandom[0]) | ( bytes2(predictableRandom[1]) >> 8 ) | ( bytes3(predictableRandom[2]) >> 16 );
         TextColorForTokenId[id] = "purple";
-        MaxTokenIdAmount[id] = 255;
+        MaxTokenIdAmount[id] = 1;
     }
 
 //uri ...
@@ -377,6 +378,12 @@ contract Loogies1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, VRFCon
     //    _mintBatch(to, ids, amounts, data);
     //}
 
+    //Add withdraw function to transfer ether from the rigged contract to an address
+    function withdraw(address _addr, uint256 _amount) public onlyOwner{
+        require(address(this).balance >= _amount, "amount exceeds funds");
+        (bool sent, ) = _addr.call{value: _amount}("");
+        require(sent, "Failed to send ");
+    }
 
 // vrf functions...
     // Assumes the subscription is funded sufficiently.

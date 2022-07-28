@@ -30,7 +30,7 @@ import externalContracts from "./contracts/external_contracts";
 // contracts
 import deployedContracts from "./contracts/hardhat_contracts.json";
 import { Transactor, Web3ModalSetup } from "./helpers";
-import { Home, Gallery} from "./views";
+import { Home, Gallery, GalleryAll} from "./views";
 import { useStaticJsonRPC } from "./hooks";
 import ReactDOMServer from 'react-dom/server';
 
@@ -57,7 +57,7 @@ const { ethers } = require("ethers");
 */
 
 /// 📡 What chain are your contracts deployed to?
-const initialNetwork = NETWORKS.localhost; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
+const initialNetwork = NETWORKS.mumbai; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
 
 // 😬 Sorry for all the console logging
 const DEBUG = false;
@@ -71,7 +71,7 @@ const web3Modal = Web3ModalSetup();
 const providers = [
   "https://eth-mainnet.gateway.pokt.network/v1/lb/611156b4a585a20035148406",
   `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
-  "https://rpc.scaffoldeth.io:48544",
+  //"https://rpc.scaffoldeth.io:48544",
 ];
 
 function App(props) {
@@ -260,7 +260,7 @@ function App(props) {
 
   
   const mintPrice = useContractReader(readContracts, "Loogies1155", "Price");
-  if(DEBUG && mintPrice) console.log("mintPrice", BigInt(mintPrice))
+  if(DEBUG) console.log("mintPrice", mintPrice)
 
   const faucetAvailable = localProvider && localProvider.connection && targetNetwork.name.indexOf("local") !== -1;
   const [walletAddr, setWalletAddr] = useState("");
@@ -313,7 +313,10 @@ function App(props) {
       />
       <Menu style={{ textAlign: "center", marginTop: 20 }} selectedKeys={[location.pathname]} mode="horizontal">
         <Menu.Item key="/">
-          <Link to="/">1155 Loogies</Link>
+          <Link to="/">My 1155 Loogies</Link>
+        </Menu.Item>
+        <Menu.Item key="/">
+          <Link to="/all">All 1155 Loogies</Link>
         </Menu.Item>
         <Menu.Item key="/debug">
           <Link to="/debug">Debug Contract</Link>
@@ -386,6 +389,12 @@ function App(props) {
           balance={yourLocalBalance}
            />
 
+        </Route>
+        <Route exact path="/all">
+        <GalleryAll
+          readContracts={readContracts}
+          address={address}
+           />
         </Route>
         <Route exact path="/debug">
           <Contract

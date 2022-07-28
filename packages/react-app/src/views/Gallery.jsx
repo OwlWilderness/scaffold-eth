@@ -21,7 +21,7 @@ function Gallery({readContracts, address, balance}) {
     //const image = useContractReader(readContracts, "Loogies1155", "renderTokenById", [1])
     //const html = '<svg width="400" height="400">' + image + '</svg>'
     //console.log("html", html);
-   
+    
     const myRef = useRef();
     useEffect(async () => {
       async function getTokenIds() {
@@ -46,16 +46,26 @@ function Gallery({readContracts, address, balance}) {
             if(tokenId > 0) {
               var svg = await readContracts.Loogies1155.renderTokenById(tokenId);  
               var bal = await readContracts.Loogies1155.balanceOf(address, tokenId);
+              var hasGrown = await readContracts.Loogies1155.HasGrown(tokenId);
+              var canGrow = false;
+              if(!hasGrown){
+                var getWordsForId = await readContracts.Loogies1155.GetWordsForId(address, tokenId);
+                if(getWordsForId && getWordsForId[0] > 0){
+                  canGrow = true;
+                }
+              }
+              console.log("hasGrown", hasGrown);
               if(svg){
                 if(DEBUG)console.log("svg", svg)
                 html = html + '<svg width="300" height="300">' 
-                + svg + '<text x="150" y="290" fill="purple">Id:' 
-                + String(tokenId) + '  Owned:' + String(bal) + '</text></svg>'  
+                + svg + '<text x="90" y="290" fill="purple">Id:' 
+                + String(tokenId) + ' |  Owned:' + String(bal) 
+                + ' | Can Grow: ' + String(canGrow) + '</text></svg>'  
                  
               }
             }
           }
-          if(html) {
+          if(html && myRef && myRef.current) {
             if(DEBUG)console.log("html", html)
             myRef.current.innerHTML = html 
           }          
