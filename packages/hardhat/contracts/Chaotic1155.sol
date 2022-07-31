@@ -23,7 +23,7 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
 //Usings...
 //
     using Counters for Counters.Counter;
-    using SafeMath for uint;
+
 //Mappings...
 //
     //staked
@@ -39,7 +39,11 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
     uint public MaxForTokenIds = 1024;
     uint public LastMintedTokenId = 0;
     uint public Price = 236978;
-    
+
+    bool public completed;
+
+
+
 // private Variables...
 //
     Counters.Counter private _tokenIds;
@@ -58,6 +62,9 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
         MaxForTokenIds = newMax;
     }
 
+    function complete() public payable {
+        completed = true;
+    }
 //Token Controllers...
 //
     function SetSvgString(uint id, uint strCount, string[] memory svgStrings) public onlyOwnerOfId(id) {
@@ -224,7 +231,20 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
 
         return strSvg;
     }
-    
+
+///common 
+//
+    //Add withdraw function to transfer ether from the rigged contract to an address
+    function withdraw(address _addr, uint256 _amount) public onlyOwner{
+        require(address(this).balance >= _amount, "amount exceeds funds");
+        (bool sent, ) = _addr.call{value: _amount}("");
+        require(sent, "Failed to send ");
+    }
+
+    // to support receiving ETH by default
+    receive() external payable {}
+    fallback() external payable {}
+
     // The following functions are overrides required by Solidity.
 
     function _beforeTokenTransfer(address operator, address from, address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
@@ -232,5 +252,14 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
         override(ERC1155, ERC1155Supply)
     {
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+    }
+    
+    //Chaotic1155.balanceOf(address(this),id)
+    function onERC1155Received(address, address, uint256, uint256, bytes memory) public virtual returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(address, address, uint256[] memory, uint256[] memory, bytes memory) public virtual returns (bytes4) {
+        return this.onERC1155BatchReceived.selector;
     }
 }
