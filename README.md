@@ -22,6 +22,9 @@ used to host metadata
 ### hardhat
 - [compiler version error](https://backbencher.dev/articles/solved-error-hh606-solidity-version-pragma-statement)
 
+### solidity
+- [base64 encode/decode](https://www.digitalocean.com/community/tutorials/how-to-encode-and-decode-strings-with-base64-in-javascript)
+
 # 🏗 Scaffold-ETH
 
 > everything you need to build on Ethereum! 🚀
