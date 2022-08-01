@@ -15,7 +15,7 @@ pragma solidity ^0.8.4;
     import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
     import "@openzeppelin/contracts/utils/Strings.sol";    
     import 'base64-sol/base64.sol';
-    import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+
     import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
@@ -42,7 +42,8 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
 
     bool public completed;
 
-
+    string public name = "Chaotic1155";
+    string public symbol = "KTC1155";
 
 // private Variables...
 //
