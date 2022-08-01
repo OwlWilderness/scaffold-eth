@@ -8,7 +8,9 @@ pragma solidity 0.8.4;
     //import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ChaoticStaker is Ownable{
-
+    
+    string public name = "ChaoticStaker";
+    
 //external contracts...
 //
     Chaotic1155 public chaotic1155;
