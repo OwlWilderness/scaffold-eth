@@ -27,13 +27,18 @@ module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
 
   // Getting a previously deployed contract
   const Chaotic1155 = await ethers.getContract("Chaotic1155", deployer);
+
+  await Chaotic1155.transferOwnership(
+    "0x7E386FE260C256Ef369d744C6c5a23155f6E2FEe"
+  );
+  
   /*  await YourContract.setPurpose("Hello");
   
     // To take ownership of yourContract using the ownable library uncomment next line and add the 
     // address you want to be the owner. 
     
-    await YourContract.transferOwnership(
-      "ADDRESS_HERE"
+    await Chaotic1155.transferOwnership(
+      "0x7E386FE260C256Ef369d744C6c5a23155f6E2FEe"
     );
 
     //const YourContract = await ethers.getContractAt('YourContract', "0xaAC799eC2d00C013f1F11c37E654e59B0429DF6A") //<-- if you want to instantiate a version of a contract at a specific address!

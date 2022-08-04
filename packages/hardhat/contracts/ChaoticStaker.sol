@@ -6,8 +6,9 @@ pragma solidity 0.8.4;
     import "hardhat/console.sol";
     import "./Chaotic1155.sol";
     //import "@openzeppelin/contracts/access/Ownable.sol";
+    import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
-contract ChaoticStaker is Ownable{
+contract ChaoticStaker is Ownable, ERC1155Holder{
     
     string public name = "ChaoticStaker";
     
@@ -59,13 +60,6 @@ contract ChaoticStaker is Ownable{
 
     }    
 
-    //function ApproveStakerForAll() {
-    //    chaotic1155.setApprovalForAll(address(this), true);
-    //}
-
-    //function RevokeStakerForAll() {
-    //    chaotic1155.setApprovalForAll(address(this), false);
-    //}
 
 //staking controllers
 //
@@ -73,18 +67,17 @@ contract ChaoticStaker is Ownable{
     function Stake(uint id, uint amount) public withdrawalDeadlineReached(false) claimDeadlineReached(false) {
         require(chaotic1155.exists(id), "token does not exists");
         require(chaotic1155.balanceOf(msg.sender,id) >= amount, "deposit amount exceeds tokenId balance");
-        //requrie(chaotic1155.isApprovedForAll(msg.sender, address(this)), "staker not aprroved to transfer tokens");
+        require(chaotic1155.isApprovedForAll(msg.sender, address(this)), "staker not approved to transfer tokens");
 
-        //chaotic1155.safeTransferFrom(msg.sender, address(this), id, amount, "");
-        (bool success, bytes memory data) = address(chaotic1155).delegatecall(
-            abi.encodeWithSignature("safeTransferFrom(address,address,uint256,uint256,bytes)", msg.sender,address(this),id,amount,"")
-        );
-        require(success, "transfer to staker failed");
+        try chaotic1155.safeTransferFrom(msg.sender, address(this), id, amount, ""){
+            balances[msg.sender][id] = balances[msg.sender][id] + amount;
+            depositTimestamps[msg.sender][id] = block.timestamp;
+            emit StakeEvent(msg.sender, id, amount);
+        } catch {
+            revert("transfer failed");
+        }
 
-        balances[msg.sender][id] = balances[msg.sender][id] + amount;
-        depositTimestamps[msg.sender][id] = block.timestamp;
 
-        emit StakeEvent(msg.sender, id, amount);
     }
 
     /*
@@ -93,16 +86,17 @@ contract ChaoticStaker is Ownable{
     */
     function Unstake(uint id) public withdrawalDeadlineReached(true) claimDeadlineReached(false) notCompleted{
         require(balances[msg.sender][id] > 0, "You have no balance to withdraw!");
-        uint256 individualBalance = balances[msg.sender][id];
-        uint256 indBalanceRewards = individualBalance + getRewardAmount(id);
-        balances[msg.sender][id] = 0;
-
-        //chaotic1155.safeTransferFrom(address(this), msg.sender , id, amount, "");
-        (bool success, bytes memory data) = address(chaotic1155).call(
-            abi.encodeWithSignature("safeTransferFrom(address,address,uint256,uint256,bytes)", address(this), msg.sender, id, indBalanceRewards,"")
-        );
-        require(success, "withdraw failed");
-
+        uint individualBalance = balances[msg.sender][id];
+        uint indBalanceRewards = individualBalance + getRewardAmount(id);
+        uint amount = individualBalance;
+        if(chaotic1155.balanceOf(address(this),id) >= indBalanceRewards){
+            amount = indBalanceRewards;
+        }
+        try chaotic1155.safeTransferFrom(address(this), msg.sender , id, amount, ""){
+            balances[msg.sender][id] = 0;
+        } catch {
+            revert("withdraw failed");
+        }
     }
 
     function getRewardAmount(uint id) internal returns (uint) {
@@ -199,14 +193,14 @@ contract ChaoticStaker is Ownable{
     fallback() external payable {}
 
 //ERC1155 receiver implementation...
-//
+// do not need if importing ERC1155Holder
 
-    function onERC1155Received(address, address, uint256, uint256, bytes memory) public virtual returns (bytes4) {
-        return this.onERC1155Received.selector;
-    }
+ //   function onERC1155Received(address, address, uint256, uint256, bytes memory) public virtual returns (bytes4) {
+ //       return this.onERC1155Received.selector;
+ //   }
 
-    function onERC1155BatchReceived(address, address, uint256[] memory, uint256[] memory, bytes memory) public virtual returns (bytes4) {
-        return this.onERC1155BatchReceived.selector;
-    }
+ //   function onERC1155BatchReceived(address, address, uint256[] memory, uint256[] memory, bytes memory) public virtual returns (bytes4) {
+ //       return this.onERC1155BatchReceived.selector;
+ //   }
 
 }

@@ -10,12 +10,13 @@ pragma solidity ^0.8.4;
 //imports
 //
     import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-    import "@openzeppelin/contracts/access/Ownable.sol";
     import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
     import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+   // import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+    
+    import "@openzeppelin/contracts/access/Ownable.sol";
     import "@openzeppelin/contracts/utils/Strings.sol";    
     import 'base64-sol/base64.sol';
-
     import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
@@ -39,6 +40,7 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
     uint public MaxForTokenIds = 1024;
     uint public LastMintedTokenId = 0;
     uint public Price = 236978;
+    uint public TotalSupply = 0;
 
     bool public completed;
 
@@ -53,7 +55,17 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
 //
     constructor() ERC1155("") {}
 
-//Collection Controlers...
+//helpers..
+//
+    //function GetTotalSupply() public view returns (uint) {
+    //    uint allsupply = 0
+    //    for(uint i = 1; i <= LastMintedTokenId; ++i){
+    //        allsupply = allsupply + totalSupply(i);
+    //    }
+    //    return allsupply;
+    //}
+
+//Collection Controllers...
 //
     function SetMaxTokenId(uint newMax) public onlyOwner{
         MaxTokenId = newMax;
@@ -110,7 +122,7 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
         uint id = _tokenIds.current();
 
         _mint(msg.sender, id, amount, "");
-
+        TotalSupply = TotalSupply + amount;
         Initialize(id);
         LastMintedTokenId = id;
     }
@@ -123,6 +135,7 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
 
         bytes memory data;
         _mint(account, id, amount, data);
+        TotalSupply = TotalSupply + amount;
     }
 
     function Initialize(uint id) internal {
@@ -132,6 +145,14 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
         Staked[id]=0;
     }
 
+    //https://ethereum.stackexchange.com/questions/15641/how-does-a-contract-find-out-if-another-address-is-a-contract
+    //function isContract(address _addr) private returns (bool isContract){
+    //uint32 size;
+    //assembly {
+    //    size := extcodesize(_addr)
+    // }
+    //return (size > 0);
+    //}
     //function mintBatch(address to, uint[] memory ids, uint[] memory amounts, bytes memory data)
     //    public
     //    onlyOwner
@@ -255,12 +276,12 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
     
-    //Chaotic1155.balanceOf(address(this),id)
-    function onERC1155Received(address, address, uint256, uint256, bytes memory) public virtual returns (bytes4) {
-        return this.onERC1155Received.selector;
-    }
+    //// do not need if importing ERC1155Holder
+    //function onERC1155Received(address, address, uint256, uint256, bytes memory) public virtual returns (bytes4) {
+    //    return this.onERC1155Received.selector;
+    //}
 
-    function onERC1155BatchReceived(address, address, uint256[] memory, uint256[] memory, bytes memory) public virtual returns (bytes4) {
-        return this.onERC1155BatchReceived.selector;
-    }
+    //function onERC1155BatchReceived(address, address, uint256[] memory, uint256[] memory, bytes memory) public virtual returns (bytes4) {
+    //    return this.onERC1155BatchReceived.selector;
+    //}
 }

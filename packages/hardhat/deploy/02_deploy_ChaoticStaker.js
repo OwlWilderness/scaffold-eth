@@ -29,7 +29,13 @@ module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
 
   // Getting a previously deployed contract
   const ChaoticStaker = await ethers.getContract("ChaoticStaker", deployer);
+
+  await ChaoticStaker.transferOwnership(
+    "0x7E386FE260C256Ef369d744C6c5a23155f6E2FEe"
+  );
+  
   /*  await YourContract.setPurpose("Hello");
+  
   
     // To take ownership of yourContract using the ownable library uncomment next line and add the 
     // address you want to be the owner. 

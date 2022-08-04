@@ -23,6 +23,7 @@ import {
   NetworkDisplay,
   FaucetHint,
   NetworkSwitch,
+  Address
 } from "./components";
 import { NETWORKS, ALCHEMY_KEY } from "./constants";
 import externalContracts from "./contracts/external_contracts";
@@ -250,7 +251,25 @@ function App(props) {
   }, [loadWeb3Modal]);
 
   const faucetAvailable = localProvider && localProvider.connection && targetNetwork.name.indexOf("local") !== -1;
+  const mintPrice = useContractReader(readContracts, defaultContractName, "Price");
+  const chaoticStakerAddr = readContracts.ChaoticStaker?.address;
+  const [isApproved, setIsApproved] = useState();
+  const [checkApproved, setCheckApproved] = useState();
 
+  //const isApproved =  
+  useEffect(async () => {
+    async function getApproval() {
+      if (readContracts && readContracts.Chaotic1155 && address && chaoticStakerAddr) {
+        const approved = await readContracts.Chaotic1155.isApprovedForAll(address,chaoticStakerAddr);
+        console.log("approved",approved)
+        setIsApproved(approved)
+      }
+    }
+    getApproval();
+  },[readContracts, address, chaoticStakerAddr, tx]);
+ // const isApproved  = (async () => {return await readContracts.Chaotic1155?.isApprovedForAll(address,chaoticStakerAddr)})
+
+  console.log("price",parseInt(mintPrice));
   return (
     <div className="App">
       {/* ✏️ Edit the header and change the title to your project name */}
@@ -298,12 +317,49 @@ function App(props) {
           <Link to="/">App Home</Link>
         </Menu.Item>
         <Menu.Item key="/debug">
-          <Link to="/debug">Debug Contracts</Link>
+          <Link to="/debug">Debug 1155</Link>
         </Menu.Item>
+        <Menu.Item key="/debugStaker">
+          <Link to="/debugStaker">Debug Staker</Link>
+        </Menu.Item>        
       </Menu>
 
       <Switch>
         <Route exact path="/">
+
+        <div style={{ maxWidth: 820, margin: "auto", marginTop: 32, paddingBottom: 10 }}>
+          Is Approved: {String(isApproved)}
+          <br></br>
+              {(
+                <Button disabled={isApproved} type={"primary"} onClick={()=>{
+                  tx( writeContracts.Chaotic1155.setApprovalForAll(chaoticStakerAddr, true))
+                }}>Approve Chaotic Staker</Button>
+              )}
+              <br></br>
+                <Address
+                  address={chaoticStakerAddr}
+                  ensProvider={mainnetProvider}
+                  blockExplorer={blockExplorer}
+                  fontSize={23}
+                  size={'long'}
+                />
+             <br></br>
+             {(
+                <Button disabled={!isApproved} type={"primary"} onClick={()=>{
+                  tx( writeContracts.Chaotic1155.setApprovalForAll(chaoticStakerAddr, false))
+                }}>Revoke Chaotic Staker</Button>
+              )}
+            </div>
+
+        <div style={{ maxWidth: 820, margin: "auto", marginTop: 32, paddingBottom: 10 }}>
+              {(
+                <Button  type={"primary"} onClick={()=>{
+                  tx( writeContracts.Chaotic1155.mintItem(1024, {value: mintPrice*1024}))
+                }}>MINT 1024 ({mintPrice && String(parseFloat(ethers.utils.formatEther(mintPrice*1024)).toFixed(18) )})</Button>
+              )}
+             
+            </div>
+
           <GalleryAll
             readContracts={readContracts}
             address={address}
@@ -321,6 +377,18 @@ function App(props) {
             contractConfig={contractConfig}
           />
         </Route>
+        <Route exact path="/debugStaker">
+
+          <Contract
+            name= {"ChaoticStaker"}
+            price={price}
+            signer={userSigner}
+            provider={localProvider}
+            address={address}
+            blockExplorer={blockExplorer}
+            contractConfig={contractConfig}
+          />
+        </Route>        
       </Switch>
 
       <ThemeSwitch />

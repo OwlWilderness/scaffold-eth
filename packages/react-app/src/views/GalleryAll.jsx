@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 
 
 
-const DEBUG = true;
+const DEBUG = false;
 
 function GalleryAll({readContracts, address}) {
      
@@ -17,6 +17,7 @@ function GalleryAll({readContracts, address}) {
     //const [Html, setHtml] = useState([]);
 
     const lastMintedTokenId = useContractReader(readContracts, "Chaotic1155", "LastMintedTokenId");
+
     if(DEBUG) console.log("lastMintedTokenId", lastMintedTokenId);
     //const image = useContractReader(readContracts, "Loogies1155", "renderTokenById", [1])
     //const html = '<svg width="400" height="400">' + image + '</svg>'
@@ -37,7 +38,7 @@ function GalleryAll({readContracts, address}) {
             var bal = await readContracts.Chaotic1155.balanceOf(address,i);
             var uri = await readContracts.Chaotic1155.uri(i);
 
-            console.log("atob",atob(uri?.split(",")[1]))
+            if(DEBUG)console.log("atob",atob(uri?.split(",")[1]))
             if(DEBUG)console.log("supply", supply?.toNumber())
             if(DEBUG)console.log("owned", bal?.toNumber())
 
@@ -60,7 +61,7 @@ function GalleryAll({readContracts, address}) {
 
     return (
     <div style={{paddingTop: 50}}>
-        <div ref={myRef} />
+       <div> <div style={{maxWidth: 820}} ref={myRef} /></div>
 
     </div>
     );
