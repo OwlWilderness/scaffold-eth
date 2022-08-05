@@ -67,7 +67,7 @@ const web3Modal = Web3ModalSetup();
 
 // 🛰 providers
 const providers = [
-  `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
+  //`https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
 ];
 
 function App(props) {

@@ -27,19 +27,17 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
 
 //Mappings...
 //
-    //staked
-    mapping (uint => uint) public Staked; //tokenid => amount staked
     //svg  
-    mapping (uint => string) public Attributes; //tokenId => Attributes '[{}]'   
-    mapping (uint => mapping(uint => string)) public SvgString; // tokenId => (string # => string) 
-    mapping (uint => uint) public SvgStringCount; //tokenid => svg string count
+    mapping (uint => string) public AttributesString4Token; //tokenId => Attributes '[{}]'   
+    mapping (uint => mapping(uint => string)) public SvgStringNum4Token; // tokenId => (string # => string) 
+    mapping (uint => uint) public SvgStringCount4Token; //tokenid => svg string count
 
 //Public Variables...
 //
     uint public MaxTokenId = 32;
-    uint public MaxForTokenIds = 1024;
+    uint public MaxForTokenIds = 10240;
     uint public LastMintedTokenId = 0;
-    uint public Price = 236978;
+    uint public Price = 0;//236978;
     uint public TotalSupply = 0;
 
     bool public completed;
@@ -128,8 +126,11 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
     }
 
     function mint(address account, uint id, uint amount)
-        public onlyOwnerOfId(id)
+        public payable //onlyOwnerOfId(id)
     {
+        require(exists(id), "token does not exist");
+        require(msg.value >= (Price * amount), "not enough funds");
+
         uint newTotal = totalSupply(id) + amount;
         require(newTotal < MaxForTokenIds, "max for token id has been reached");
 
@@ -142,7 +143,6 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
         SvgStringCount[id] = 2;
         SvgString[id][1] = string(abi.encodePacked('<circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="purple" />'));
         SvgString[id][2] = string(abi.encodePacked('<text x="40" y="55" fill="yellow">',uint2str(id),'</text>'));
-        Staked[id]=0;
     }
 
     //https://ethereum.stackexchange.com/questions/15641/how-does-a-contract-find-out-if-another-address-is-a-contract
@@ -171,12 +171,12 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
     function uri(uint256 id) public view override returns (string memory) {
         require(exists(id), "token does not exist");
         
-        string memory staked = uint2str(Staked[0]);
+        
         string memory supply = uint2str(totalSupply(id));
 
         //string memory regen4id = uint2str(GetRegenForId(id));
         string memory name = string(abi.encodePacked('Chaotic 1155 - ',uint2str(id)));
-        string memory description = string(abi.encodePacked('Chaotic 1155 #',uint2str(id),' Staked: ', staked, 'Supply: ',supply));
+        string memory description = string(abi.encodePacked('Chaotic 1155 #',uint2str(id), 'Supply: ',supply));
         string memory image = Base64.encode(bytes(GenerateSVGofTokenById(id)));
 
         return

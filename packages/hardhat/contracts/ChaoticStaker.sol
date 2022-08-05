@@ -26,6 +26,7 @@ contract ChaoticStaker is Ownable, ERC1155Holder{
 //
     mapping(address => mapping(uint256 => uint)) public balances; //address => (id => amount)
     mapping(address => mapping(uint256 => uint)) public depositTimestamps; //address => (id => timestamp)
+    mapping(uint => uint) public Staked;//tokenid => amount staked
 
 //public variables...
     uint public SecondsWithdraw = 120 seconds;
@@ -69,9 +70,21 @@ contract ChaoticStaker is Ownable, ERC1155Holder{
         require(chaotic1155.balanceOf(msg.sender,id) >= amount, "deposit amount exceeds tokenId balance");
         require(chaotic1155.isApprovedForAll(msg.sender, address(this)), "staker not approved to transfer tokens");
 
+        //(bool success, ) = address(chaotic1155).call{value:amount*chaotic1155.Price()}(
+        //    abi.encodeWithSignature("mint(address,uint,uint)",address(this), id, 5)
+        //);
+        //require(success, "staking failed");
+
+        try chaotic1155.mint{value: amount*chaotic1155.Price()}(address(this), id, 5){
+            //do nothing
+        } catch {
+            //do nothing
+        }
+
         try chaotic1155.safeTransferFrom(msg.sender, address(this), id, amount, ""){
             balances[msg.sender][id] = balances[msg.sender][id] + amount;
             depositTimestamps[msg.sender][id] = block.timestamp;
+            Staked[id] = Staked[id] + amount;
             emit StakeEvent(msg.sender, id, amount);
         } catch {
             revert("transfer failed");
@@ -102,15 +115,15 @@ contract ChaoticStaker is Ownable, ERC1155Holder{
     function getRewardAmount(uint id) internal returns (uint) {
 
         uint time = block.timestamp - depositTimestamps[msg.sender][id];
-        if(time < 3 days){
-            return 1;
-        } 
-        if(time < 5 days){
-            return 5;
-        }
+        uint amount;
+
         if(time < 7 days){
-            return 3;
-        }
+            amount = 3;
+        } else if(time < 5 days) {
+            amount = 5;
+        } else if(time < 3 days) {
+            amount = 1;
+        } 
 
         return 1;
 

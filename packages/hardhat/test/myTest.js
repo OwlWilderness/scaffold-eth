@@ -36,6 +36,9 @@ describe("My Dapp", function () {
           .to.emit(myContract, "SetPurpose")
           .withArgs(owner.address, newPurpose);
       });
+
     });
+
   });
+
 });

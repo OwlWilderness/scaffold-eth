@@ -3,11 +3,12 @@ import { useContractReader } from "eth-hooks";
 import { ethers } from "ethers";
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";       
+import { List } from "antd";
 
 
 
 
-const DEBUG = false;
+const DEBUG = true;
 
 function GalleryAll({readContracts, address}) {
      
@@ -23,11 +24,15 @@ function GalleryAll({readContracts, address}) {
     //const html = '<svg width="400" height="400">' + image + '</svg>'
     //console.log("html", html);
    
-    const myRef = useRef();
+    const [tokens, setTokens] = useState([]);
+
+    
     useEffect(async () => {
-      async function getTokenIds() {
+      async function getTokens() {
         if(readContracts && readContracts.Chaotic1155 && lastMintedTokenId){
-          
+        
+          const tokenArray = [];
+
         if(lastMintedTokenId > 0){
           var html = '';
           for(var i = 1; i <= lastMintedTokenId; ++i) {
@@ -38,32 +43,47 @@ function GalleryAll({readContracts, address}) {
             var bal = await readContracts.Chaotic1155.balanceOf(address,i);
             var uri = await readContracts.Chaotic1155.uri(i);
 
-            if(DEBUG)console.log("atob",atob(uri?.split(",")[1]))
+            if(DEBUG)console.log("uri",uri)
+            if(DEBUG)console.log("atob1",atob(uri?.split(",")[1]))
             if(DEBUG)console.log("supply", supply?.toNumber())
             if(DEBUG)console.log("owned", bal?.toNumber())
 
             if(svg && supply && bal){
-              if(DEBUG)console.log("svg", svg)
-              html = '<div>' + html + svg + '</div>' 
-              +'<div>supply:' + supply?.toNumber() + ' owned:' + bal + '</div>'
-              }
-
+              //if(DEBUG)console.log("svg", svg)
+              //html = '<div>' + html + svg + '</div>' 
+              //+'<div>supply:' + supply?.toNumber() + ' owned:' + bal + '</div>'
+              tokenArray.push({metadata: atob(uri.split(",")[1]), supply: supply, owned: bal, svg: svg});
+            }
+            setTokens(tokenArray);
           }
-          if(html && myRef && myRef.current) {
-            if(DEBUG)console.log("html", html)
-            myRef.current.innerHTML = html 
-          }          
+          //if(html && myRef && myRef.current) {
+          //  if(DEBUG)console.log("html", html)
+          //  myRef.current.innerHTML = html 
+          //}          
         }
       }    
     } 
-    getTokenIds();
+    getTokens();
     },[readContracts, address, lastMintedTokenId]);
 
-    return (
-    <div style={{paddingTop: 50}}>
-       <div> <div style={{maxWidth: 820}} ref={myRef} /></div>
+    //const items = tokens.map((token) => <div>{token}</div>)
 
-    </div>
+    const myRef = useRef();
+    return (
+      //    <div style={{paddingTop: 50}}>
+       //<div> <div style={{maxWidth: 820}} ref={myRef} /></div>
+       //</div>
+      <div >
+        {
+          tokens.map((token) => 
+          {
+            return (
+              <div>{String(token.supply)}</div>
+            );
+          })
+        }
+
+      </div>
     );
 }
 
