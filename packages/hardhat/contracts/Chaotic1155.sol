@@ -37,7 +37,7 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
     uint public MaxTokenId = 32;
     uint public MaxForTokenIds = 10240;
     uint public LastMintedTokenId = 0;
-    uint public Price = 0;//236978;
+    uint public Price = 236978;//236978;
     uint public TotalSupply = 0;
 
     bool public completed;
@@ -78,22 +78,22 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
     }
 //Token Controllers...
 //
-    function SetSvgString(uint id, uint strCount, string[] memory svgStrings) public onlyOwnerOfId(id) {
+    function SetSvgStrings(uint id, uint strCount, string[] memory svgStrings) public onlyOwnerOfId(id) {
         require(strCount > 0, "svg string count must be greater than zero");
         require(svgStrings.length >= strCount, "svg strings less than svg string count");
         
-        SvgStringCount[id] = strCount + 1;
+        SvgStringCount4Token[id] = strCount + 1;
         for(uint i=1; i <= strCount; ++i){
-            SvgString[id][i] = svgStrings[i-1];
+            SvgStringNum4Token[id][i] = svgStrings[i-1];
         }
-        SvgString[id][strCount + 1] = string(abi.encodePacked('<text x="40" y="55" fill="yellow">',uint2str(id),'</text>'));
+        SvgStringNum4Token[id][strCount + 1] = string(abi.encodePacked('<text x="40" y="55" fill="yellow">',uint2str(id),'</text>'));
     }
 
     function SetAttributes(uint id, string memory newAttributes, bool append) public onlyOwnerOfId(id) {
         if(append){
-            Attributes[id] = string(abi.encodePacked(Attributes[id], newAttributes));
+            AttributesString4Token[id] = string(abi.encodePacked(AttributesString4Token[id], newAttributes));
         } else {
-            Attributes[id] = newAttributes;
+            AttributesString4Token[id] = newAttributes;
         }
     }
 
@@ -109,6 +109,7 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
 //
     function mintItem(uint amount) public payable {
         //require sent amout meets price requirement
+        require(amount > 0, "mint amount must be > 0");
         require(msg.value >= (Price * amount), "not enough funds");
 
         //require max tokens have not been minted
@@ -127,8 +128,9 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
 
     function mint(address account, uint id, uint amount)
         public payable //onlyOwnerOfId(id)
-    {
+    {   
         require(exists(id), "token does not exist");
+        require(amount > 0, "mint amount must be > 0");
         require(msg.value >= (Price * amount), "not enough funds");
 
         uint newTotal = totalSupply(id) + amount;
@@ -140,9 +142,9 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
     }
 
     function Initialize(uint id) internal {
-        SvgStringCount[id] = 2;
-        SvgString[id][1] = string(abi.encodePacked('<circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="purple" />'));
-        SvgString[id][2] = string(abi.encodePacked('<text x="40" y="55" fill="yellow">',uint2str(id),'</text>'));
+        SvgStringCount4Token[id] = 2;
+        SvgStringNum4Token[id][1] = string(abi.encodePacked('<circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="purple" />'));
+        SvgStringNum4Token[id][2] = string(abi.encodePacked('<text x="40" y="55" fill="yellow">',uint2str(id),'</text>'));
     }
 
     //https://ethereum.stackexchange.com/questions/15641/how-does-a-contract-find-out-if-another-address-is-a-contract
@@ -176,7 +178,7 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
 
         //string memory regen4id = uint2str(GetRegenForId(id));
         string memory name = string(abi.encodePacked('Chaotic 1155 - ',uint2str(id)));
-        string memory description = string(abi.encodePacked('Chaotic 1155 #',uint2str(id), 'Supply: ',supply));
+        string memory description = string(abi.encodePacked('Chaotic 1155 #',uint2str(id), ' Supply: ',supply));
         string memory image = Base64.encode(bytes(GenerateSVGofTokenById(id)));
 
         return
@@ -193,7 +195,7 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
                                 '", "attributes": [{"trait_type": "supply", "value": "',
                                 uint2str(totalSupply(id)),
                                 '"}',
-                                Attributes[id],
+                                AttributesString4Token[id],
                                 '], "image": "',
                                 'data:image/svg+xml;base64,',
                                 image,
@@ -244,11 +246,11 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
     function RenderTokenById(uint id) public view returns (string memory) {
         require(exists(id), "token does not exist");
 
-        uint str4Id = SvgStringCount[id];
+        uint str4Id = SvgStringCount4Token[id];
         string memory strSvg;
 
         for(uint i=1; i <= str4Id; ++i){
-            strSvg = string(abi.encodePacked(strSvg, SvgString[id][i] ));
+            strSvg = string(abi.encodePacked(strSvg, SvgStringNum4Token[id][i] ));
         }
 
         return strSvg;

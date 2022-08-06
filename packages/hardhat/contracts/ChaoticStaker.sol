@@ -37,6 +37,11 @@ contract ChaoticStaker is Ownable, ERC1155Holder{
     uint256 public claimDeadline = block.timestamp + SecondsClaimDeadline; 
     uint256 public currentBlock = 0;
 
+//helpers...
+//
+    function GetStaked4Account(address addr, uint id) public view returns (uint) {
+        return balances[addr][id];
+    }
 //constructor...
 //
     constructor(address payable chaotic1155Address) {
@@ -67,6 +72,7 @@ contract ChaoticStaker is Ownable, ERC1155Holder{
     // Stake function for a user to stake ETH in our contract
     function Stake(uint id, uint amount) public withdrawalDeadlineReached(false) claimDeadlineReached(false) {
         require(chaotic1155.exists(id), "token does not exists");
+        require(amount > 0, "must stake an amount > 0");
         require(chaotic1155.balanceOf(msg.sender,id) >= amount, "deposit amount exceeds tokenId balance");
         require(chaotic1155.isApprovedForAll(msg.sender, address(this)), "staker not approved to transfer tokens");
 
@@ -115,17 +121,26 @@ contract ChaoticStaker is Ownable, ERC1155Holder{
     function getRewardAmount(uint id) internal returns (uint) {
 
         uint time = block.timestamp - depositTimestamps[msg.sender][id];
-        uint amount;
+        uint amount = 1;
 
-        if(time < 7 days){
+        if(time < 3 days){
             amount = 3;
-        } else if(time < 5 days) {
+        } else if (time < 5 days) {
             amount = 5;
-        } else if(time < 3 days) {
-            amount = 1;
         } 
 
-        return 1;
+        uint staked = Staked[id];
+        uint bal = chaotic1155.balanceOf(address(this), id);
+        if(bal > staked){
+            uint avail = bal - staked;
+            if(avail < amount){
+                amount = avail;
+            }
+        } else {
+            amount = 0;
+        }
+        
+        return amount;
 
     }
 

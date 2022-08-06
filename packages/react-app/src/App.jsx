@@ -67,7 +67,7 @@ const web3Modal = Web3ModalSetup();
 
 // 🛰 providers
 const providers = [
-  //`https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
+  `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
 ];
 
 function App(props) {
@@ -255,13 +255,15 @@ function App(props) {
   const chaoticStakerAddr = readContracts.ChaoticStaker?.address;
   const [isApproved, setIsApproved] = useState();
   const [checkApproved, setCheckApproved] = useState();
+  const [mintNewAmount, setMintNewAmount] = useState();
+  const [mintCost, setMintCost] = useState(0)
 
   //const isApproved =  
   useEffect(async () => {
     async function getApproval() {
       if (readContracts && readContracts.Chaotic1155 && address && chaoticStakerAddr) {
         const approved = await readContracts.Chaotic1155.isApprovedForAll(address,chaoticStakerAddr);
-        console.log("approved",approved)
+        if(DEBUG)console.log("approved",approved)
         setIsApproved(approved)
       }
     }
@@ -269,7 +271,7 @@ function App(props) {
   },[readContracts, address, chaoticStakerAddr, tx]);
  // const isApproved  = (async () => {return await readContracts.Chaotic1155?.isApprovedForAll(address,chaoticStakerAddr)})
 
-  console.log("price",parseInt(mintPrice));
+  if(DEBUG)console.log("price",parseInt(mintPrice));
   return (
     <div className="App">
       {/* ✏️ Edit the header and change the title to your project name */}
@@ -316,6 +318,9 @@ function App(props) {
         <Menu.Item key="/">
           <Link to="/">App Home</Link>
         </Menu.Item>
+        <Menu.Item key="/mytokens">
+          <Link to="/mytokens">My Tokens</Link>
+        </Menu.Item>
         <Menu.Item key="/debug">
           <Link to="/debug">Debug 1155</Link>
         </Menu.Item>
@@ -352,10 +357,16 @@ function App(props) {
             </div>
 
         <div style={{ maxWidth: 820, margin: "auto", marginTop: 32, paddingBottom: 10 }}>
+            <input onChange={(e) => {
+                  setMintNewAmount(e.target.value);
+                  setMintCost(e.target.value * mintPrice)
+              }} value={mintNewAmount} type={"string"} placeholder="amount to mint"></input>
               {(
-                <Button  type={"primary"} onClick={()=>{
-                  tx( writeContracts.Chaotic1155.mintItem(1024, {value: mintPrice*1024}))
-                }}>MINT 1024 ({mintPrice && String(parseFloat(ethers.utils.formatEther(mintPrice*1024)).toFixed(18) )})</Button>
+                <Button style={{marginLeft: 10}} type={"primary"} onClick={()=>{
+                  const mAmt = mintNewAmount?mintNewAmount:0
+                  tx( writeContracts.Chaotic1155.mintItem(mAmt, {value: mintCost}))
+                }}>MINT New ({mintPrice && String(parseFloat(ethers.utils.formatEther(mintCost)).toFixed(18) )})</Button>
+                
               )}
              
             </div>
@@ -363,7 +374,23 @@ function App(props) {
           <GalleryAll
             readContracts={readContracts}
             address={address}
+            balance={yourLocalBalance}
+            writeContracts={writeContracts}
+            tx={tx}
+            all={true}
+            price={mintPrice}
           />
+        </Route>
+        <Route exact path="/mytokens">
+          <GalleryAll
+              readContracts={readContracts}
+              address={address}
+              balance={yourLocalBalance}
+              writeContracts={writeContracts}
+              tx={tx}
+              all={false}
+              price={mintPrice}
+            />
         </Route>
         <Route exact path="/debug">
 
