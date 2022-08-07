@@ -16,6 +16,8 @@ contract ChaoticStaker is Ownable, ERC1155Holder{
 //
     Chaotic1155 public chaotic1155;
 
+    bool public completed = false;
+
 //events...
 //
     event StakeEvent(address indexed sender, uint tokenId, uint256 amount); 
@@ -27,6 +29,8 @@ contract ChaoticStaker is Ownable, ERC1155Holder{
     mapping(address => mapping(uint256 => uint)) public balances; //address => (id => amount)
     mapping(address => mapping(uint256 => uint)) public depositTimestamps; //address => (id => timestamp)
     mapping(uint => uint) public Staked;//tokenid => amount staked
+    mapping(uint => address) public AllStakers; // id for address => address
+    mapping(address => uint) public AllStakersLookup; // address => id for address
 
 //public variables...
     uint public SecondsWithdraw = 120 seconds;
@@ -36,7 +40,7 @@ contract ChaoticStaker is Ownable, ERC1155Holder{
     uint256 public withdrawalDeadline = block.timestamp + SecondsWithdraw; 
     uint256 public claimDeadline = block.timestamp + SecondsClaimDeadline; 
     uint256 public currentBlock = 0;
-
+    uint public NumberOfStakers = 0;
 //helpers...
 //
     function GetStaked4Account(address addr, uint id) public view returns (uint) {
@@ -91,6 +95,15 @@ contract ChaoticStaker is Ownable, ERC1155Holder{
             balances[msg.sender][id] = balances[msg.sender][id] + amount;
             depositTimestamps[msg.sender][id] = block.timestamp;
             Staked[id] = Staked[id] + amount;
+            
+            uint stakerId = AllStakersLookup[msg.sender];
+            if(stakerId < 1){ 
+                NumberOfStakers = NumberOfStakers + 1;
+                stakerId = NumberOfStakers;
+                AllStakersLookup[msg.sender] = stakerId;
+                AllStakers[stakerId] = msg.sender;
+            }
+
             emit StakeEvent(msg.sender, id, amount);
         } catch {
             revert("transfer failed");
@@ -151,14 +164,19 @@ contract ChaoticStaker is Ownable, ERC1155Holder{
     
     function execute() public claimDeadlineReached(true) notCompleted {
         //uint256 contractBalance = address(this).balance;
+        //all token balances are set to this contract
         uint lastMinted = chaotic1155.LastMintedTokenId();
         for(uint i = 1; i <= lastMinted; ++i){
-            uint bal = chaotic1155.balanceOf(address(this), i);
-            if(bal> 0){
-                chaotic1155.safeTransferFrom(address(this), address(chaotic1155), bal, i, "" );
+            if(Staked[i] > 0){
+                Staked[i] = 0;
+            }
+            for(uint j = 1; j <= NumberOfStakers; ++j){
+                if(balances[AllStakers[j]][i] > 0){
+                    balances[AllStakers[j]][i] = 0;
+                }
             }
         }
-        chaotic1155.complete();
+        completed = true;
     }    
 
 //public views..
@@ -202,11 +220,23 @@ contract ChaoticStaker is Ownable, ERC1155Holder{
     }
 
     modifier notCompleted() {
-        bool completed = chaotic1155.completed();
+        //bool completed = chaotic1155.completed();
         require(!completed, "Stake already completed!");
         _;
     }
 
+    //withdraw all tokens that are not staked
+    function withdrawTokens() public onlyOwner {
+        uint lastMinted = chaotic1155.LastMintedTokenId();
+        for(uint i = 1; i <= lastMinted; ++i){
+            uint bal = chaotic1155.balanceOf(address(this), i);
+            uint staked = Staked[i];
+            if(bal > staked){
+                uint amount = bal - staked;
+                chaotic1155.safeTransferFrom(address(this), msg.sender, i, amount, "");
+            }
+        }
+    }
 ///common 
 //
     //Add withdraw function to transfer ether from the rigged contract to an address

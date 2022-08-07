@@ -40,8 +40,6 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
     uint public Price = 236978;//236978;
     uint public TotalSupply = 0;
 
-    bool public completed;
-
     string public name = "Chaotic1155";
     string public symbol = "KTC1155";
 
@@ -73,9 +71,7 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
         MaxForTokenIds = newMax;
     }
 
-    function complete() public payable {
-        completed = true;
-    }
+
 //Token Controllers...
 //
     function SetSvgStrings(uint id, uint strCount, string[] memory svgStrings) public onlyOwnerOfId(id) {
