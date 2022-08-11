@@ -37,7 +37,7 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
     uint public MaxTokenId = 32;
     uint public MaxForTokenIds = 10240;
     uint public LastMintedTokenId = 0;
-    uint public Price = 236978;//236978;
+    uint public Price = 236978;
     uint public TotalSupply = 0;
 
     string public name = "Chaotic1155";
