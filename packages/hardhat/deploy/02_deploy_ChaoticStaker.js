@@ -22,7 +22,7 @@ module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
   await deploy("ChaoticStaker", {
     // Learn more about args here: https://www.npmjs.com/package/hardhat-deploy#deploymentsdeploy
     from: deployer,
-    args: [ Chaotic1155.address ],
+    args: [ Chaotic1155.address, 928 ],
     log: true,
     waitConfirmations: 5,
   });

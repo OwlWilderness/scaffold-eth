@@ -60,7 +60,10 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
     //    }
     //    return allsupply;
     //}
-
+    function SetPrice(uint256 _price) public onlyOwner {
+        Price = _price;
+    }
+    
 //Collection Controllers...
 //
     function SetMaxTokenId(uint newMax) public onlyOwner{
