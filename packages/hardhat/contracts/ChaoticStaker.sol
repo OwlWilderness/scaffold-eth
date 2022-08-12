@@ -91,6 +91,8 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
     bool public completed = false;
     bool public UseVRF = false;    
     uint public Erc1155MaxTokenId = 0;
+    bool public GiveRewards = false;
+
 //helpers...
 //
     function GetStaked4Account(address addr, uint id) public view returns (uint) {
@@ -105,6 +107,16 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
         return RandomWordsForRequestId[req];
     }
 
+    function shrinkArray(uint[] memory arr, uint newLen) private view returns (uint[] memory){
+        uint[] memory rArr = new uint[](newLen);
+
+        for(uint i = 0; i < newLen; ++i){
+            rArr[i] = arr[i];
+        }
+
+        return rArr;
+    }    
+
 //constructor...
 //
     constructor(address payable chaotic1155Address, uint64 subscriptionId) VRFConsumerBaseV2(vrfCoordinator) {
@@ -116,7 +128,11 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
 
 //contract controllers...
 //
-    function SetErc1155MaxToken(uint newMaxId) public onlyOwner{
+    function EnableRewards() public onlyOwner {
+        GiveRewards = !GiveRewards;
+    }
+
+    function SetErc1155MaxToken(uint newMaxId) public onlyOwner {
         Erc1155MaxTokenId = newMaxId;
     }
     
@@ -196,30 +212,46 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
     */
     function Unstake(uint id) public withdrawalDeadlineReached(true) claimDeadlineReached(false) notCompleted{
         require(balances[msg.sender][id] > 0, "You have no balance to withdraw!");
+
+        (uint[] memory ids, uint[] memory amts, uint totalAmt, uint xfrAmt) = GetIdsAndAmtsToXfer(id);
+
+        try chaotic1155.safeBatchTransferFrom(address(this), msg.sender, ids, amts, "") {
+            if (xfrAmt < totalAmt ){
+                balances[msg.sender][id] = totalAmt - xfrAmt;
+            } else {
+                balances[msg.sender][id] = 0;
+            }
+        } catch {
+            revert("withdraw failed");
+        }
+    }
+
+    function GetIdsAndAmtsToXfer(uint id) private view returns (uint[] memory ids, uint[] memory amts, uint totalAmt, uint xferAmt){
         uint individualBalance = balances[msg.sender][id];
-
         uint randTokenId = GetRandomTokenId(msg.sender, id);
-
         uint indBalanceRewards = individualBalance + getRewardAmount(id);
 
-        uint[] memory ids;
-        uint[] memory amts;
+        ids = new uint[](Erc1155MaxTokenId);
+        amts = new uint[](Erc1155MaxTokenId);
+        uint actualLen = 0;
 
         uint bal = chaotic1155.balanceOf(address(this),randTokenId);
         uint allocated = 0;
 
         if( bal >= indBalanceRewards){
-            ids.push(randTokenId);
-            amts.push(indBalanceRewards);
+            ids[actualLen] = randTokenId;
+            amts[actualLen] = indBalanceRewards;
             allocated = indBalanceRewards;
+            actualLen = 1;
         } else {
             uint toAllocate = indBalanceRewards;
             if(bal > 0){
-                ids.push(randTokenId);
-                amts.push(bal);
+                ids[actualLen] = randTokenId;
+                amts[actualLen] = bal;
 
                 toAllocate = toAllocate - bal;
                 allocated = bal;
+                actualLen = actualLen + 1;
             }
             for(uint i = 1; i <= Erc1155MaxTokenId; ++i) {
                 if(randTokenId + i <= Erc1155MaxTokenId) {
@@ -229,32 +261,29 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
                 }
                 bal = chaotic1155.balanceOf(address(this),randTokenId);
                 if(bal > 0){
-                    ids.push(randTokenId);
+                    ids[actualLen] = randTokenId;
                     if(bal >= toAllocate){
-                        amts.push(toAllocate);
+                        amts[actualLen] = toAllocate;
                         allocated = allocated + toAllocate;
+                        actualLen = actualLen + 1;
                         break;
                     } else {
-                        amts.push(bal);
+                        amts[actualLen] = bal;
                         toAllocate = toAllocate - bal;
                         allocated = allocated + bal;
+                        actualLen = actualLen + 1;
                     }
                 }
             }
         }
 
-        try chaotic1155.safeBatchTransferFrom(address(this), msg.sender, ids, amts, "") {
-            if (allocated < indBalanceRewards ){
-                balances[msg.sender][id] = indBalanceRewards - allocated;
-            } else {
-                balances[msg.sender][id] = 0;
-            }
-        } catch {
-            revert("withdraw failed");
-        }
+        ids = shrinkArray(ids, actualLen);
+        amts = shrinkArray(amts, actualLen);  
+
+        return (ids, amts, indBalanceRewards, allocated);   
     }
 
-    function GetRandomTokenId(address addr, uint id) public returns (uint){
+    function GetRandomTokenId(address addr, uint id) public view returns (uint){
         if(UseVRF){
             uint256[] memory words = GetWordsForId(addr, id);
             if (words.length > 0){
@@ -268,7 +297,11 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
         return id;
     }
 
-    function getRewardAmount(uint id) internal returns (uint) {
+    function getRewardAmount(uint id) internal view returns (uint) {
+
+        if(!GiveRewards){
+            return 0;
+        }
 
         uint time = block.timestamp - depositTimestamps[msg.sender][id];
         uint amount = 1;
@@ -352,16 +385,21 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
     function withdrawTokens() public onlyOwner {
         require(completed, "stake not completed");
 
-        uint[] memory ids;
-        uint[] memory amts;
+        uint[] memory ids = new uint[](Erc1155MaxTokenId);
+        uint[] memory amts = new uint[](Erc1155MaxTokenId);
+        uint actualLen = 0;
 
         for(uint i = 1; i <= Erc1155MaxTokenId; ++i){
             uint bal = chaotic1155.balanceOf(address(this), i);
             if(bal > 0){
-                ids.push(i);
-                amts.push(bal);
+                ids[actualLen] = i;
+                amts[actualLen] = bal;
+                actualLen = actualLen + 1;
             }
         }
+
+        ids = shrinkArray(ids, actualLen);
+        amts = shrinkArray(amts, actualLen);
 
         chaotic1155.safeBatchTransferFrom(address(this), msg.sender, ids, amts, "");
     }
