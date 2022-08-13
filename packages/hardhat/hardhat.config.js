@@ -2,7 +2,6 @@ require("dotenv").config();
 const { utils } = require("ethers");
 const fs = require("fs");
 const chalk = require("chalk");
-const { INFURA_ID, ETHERSCAN_KEY } = require("../react-app/src/constants");
 
 require("@nomiclabs/hardhat-waffle");
 require("@tenderly/hardhat-tenderly");
@@ -140,7 +139,7 @@ module.exports = {
       },
     },
     mumbai: {
-      url: `https://polygon-mumbai.infura.io/v3/${INFURA_ID}`,// "https://rpc-mumbai.maticvigil.com",
+      url: "https://polygon-mumbai.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad",// "https://rpc-mumbai.maticvigil.com",
       // url: "https://speedy-nodes-nyc.moralis.io/XXXXXXXXXXXXXXXXXXXXXXX/polygon/mumbai", // <---- YOUR MORALIS ID! (not limited to infura)
       gasPrice: 50000000000,
       accounts: {
@@ -320,7 +319,7 @@ module.exports = {
   },
   etherscan: {
     apiKey: {
-      mainnet: `${ETHERSCAN_KEY}`,
+      mainnet: "DNXJA8RX2Q3VZ4URQIWP7Z68CJXQZSC6AW",
       // add other network's API key here
     },
   },

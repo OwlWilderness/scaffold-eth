@@ -205,7 +205,7 @@ function App(props) {
       console.log("💵 yourMainnetBalance", yourMainnetBalance ? ethers.utils.formatEther(yourMainnetBalance) : "...");
       console.log("📝 readContracts", readContracts);
       console.log("🌍 DAI contract on mainnet:", mainnetContracts);
-      console.log("💵 yourMainnetDAIBalance", myMainnetDAIBalance);
+     // console.log("💵 yourMainnetDAIBalance", myMainnetDAIBalance);
       console.log("🔐 writeContracts", writeContracts);
     }
   }, [
@@ -218,7 +218,7 @@ function App(props) {
     writeContracts,
     mainnetContracts,
     localChainId,
-    myMainnetDAIBalance,
+   // myMainnetDAIBalance,
   ]);
 
   const loadWeb3Modal = useCallback(async () => {
