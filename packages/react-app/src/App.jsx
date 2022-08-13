@@ -250,7 +250,26 @@ function App(props) {
   }, [loadWeb3Modal]);
 
   const faucetAvailable = localProvider && localProvider.connection && targetNetwork.name.indexOf("local") !== -1;
+  const mintPrice = useContractReader(readContracts, "Chaotic1155", "Price");
+  const chaoticStakerAddr = readContracts.ChaoticStaker?.address;
+  const [isApproved, setIsApproved] = useState();
+  const [checkApproved, setCheckApproved] = useState();
+  const [mintNewAmount, setMintNewAmount] = useState();
+  const [mintCost, setMintCost] = useState(0)
 
+  //const isApproved =  
+  useEffect(async () => {
+    async function getApproval() {
+      if (readContracts && readContracts.Chaotic1155 && address && chaoticStakerAddr) {
+        const approved = await readContracts.Chaotic1155.isApprovedForAll(address,chaoticStakerAddr);
+        if(DEBUG)console.log("approved",approved)
+        setIsApproved(approved)
+      }
+    }
+    getApproval();
+  },[readContracts, address, chaoticStakerAddr, tx]);
+
+  
   return (
     <div className="App">
       {/* ✏️ Edit the header and change the title to your project name */}
