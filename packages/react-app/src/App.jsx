@@ -23,13 +23,14 @@ import {
   NetworkDisplay,
   FaucetHint,
   NetworkSwitch,
+  Address
 } from "./components";
 import { NETWORKS, ALCHEMY_KEY } from "./constants";
 import externalContracts from "./contracts/external_contracts";
 // contracts
 import deployedContracts from "./contracts/hardhat_contracts.json";
 import { Transactor, Web3ModalSetup } from "./helpers";
-import { Home, ExampleUI, Hints, Subgraph } from "./views";
+import { GalleryAll } from "./views";
 import { useStaticJsonRPC } from "./hooks";
 
 const { ethers } = require("ethers");
@@ -57,7 +58,7 @@ const initialNetwork = NETWORKS.localhost; // <------- select your target fronte
 const defaultContractName = "YourContract";
 
 // 😬 Sorry for all the console logging
-const DEBUG = false;
+const DEBUG = true;
 const NETWORKCHECK = true;
 const USE_BURNER_WALLET = true; // toggle burner wallet feature
 const USE_NETWORK_SELECTOR = false;
@@ -316,24 +317,86 @@ function App(props) {
         <Menu.Item key="/">
           <Link to="/">App Home</Link>
         </Menu.Item>
-        <Menu.Item key="/debug">
-          <Link to="/debug">Debug Contracts</Link>
+        <Menu.Item key="/mytokens">
+          <Link to="/mytokens">My Tokens</Link>
         </Menu.Item>
+        <Menu.Item key="/debug">
+          <Link to="/debug">Debug 1155</Link>
+        </Menu.Item>
+        <Menu.Item key="/debugStaker">
+          <Link to="/debugStaker">Debug Staker</Link>
+        </Menu.Item>        
+        <Menu.Item key="/debugYC">
+          <Link to="/debugYC">Debug YC</Link>
+        </Menu.Item>  
       </Menu>
 
       <Switch>
         <Route exact path="/">
-          Add some stuff to the landing page
+        <div style={{ maxWidth: 820, margin: "auto", marginTop: 32, paddingBottom: 10 }}>
+          Is Approved: {String(isApproved)}
+          <br></br>
+              {(
+                <Button disabled={isApproved} type={"primary"} onClick={()=>{
+                  tx( writeContracts.Chaotic1155.setApprovalForAll(chaoticStakerAddr, true))
+                }}>Approve Chaotic Staker</Button>
+              )}
+              <br></br>
+                <Address
+                  address={chaoticStakerAddr}
+                  ensProvider={mainnetProvider}
+                  blockExplorer={blockExplorer}
+                  fontSize={23}
+                  size={'long'}
+                />
+             <br></br>
+             {(
+                <Button disabled={!isApproved} type={"primary"} onClick={()=>{
+                  tx( writeContracts.Chaotic1155.setApprovalForAll(chaoticStakerAddr, false))
+                }}>Revoke Chaotic Staker</Button>
+              )}
+            </div>
+
+        <div style={{ maxWidth: 820, margin: "auto", marginTop: 32, paddingBottom: 10 }}>
+            <input onChange={(e) => {
+                  setMintNewAmount(e.target.value);
+                  setMintCost(e.target.value * mintPrice)
+              }} value={mintNewAmount} type={"string"} placeholder="amount to mint"></input>
+              {(
+                <Button style={{marginLeft: 10}} type={"primary"} onClick={()=>{
+                  const mAmt = mintNewAmount?mintNewAmount:0
+                  tx( writeContracts.Chaotic1155.mintItem(mAmt, {value: mintCost}))
+                }}>MINT New ({mintPrice && String(parseFloat(ethers.utils.formatEther(mintCost)).toFixed(18) )})</Button>
+                
+              )}
+             
+            </div>
+            <GalleryAll
+            readContracts={readContracts}
+            address={address}
+            balance={yourLocalBalance}
+            writeContracts={writeContracts}
+            tx={tx}
+            all={true}
+            price={mintPrice}
+          />            
+        </Route>
+        <Route exact path="/mytokens">
+         <GalleryAll
+              readContracts={readContracts}
+              address={address}
+              balance={yourLocalBalance}
+              writeContracts={writeContracts}
+              tx={tx}
+              all={false}
+              price={mintPrice}
+            />
+
         </Route>
         <Route exact path="/debug">
-          {/*
-                🎛 this scaffolding is full of commonly used components
-                this <Contract/> component will automatically parse your ABI
-                and give you a form to interact with it locally
-            */}
 
           <Contract
-            name= {defaultContractName}
+            name= {"Chaotic1155"}
             price={price}
             signer={userSigner}
             provider={localProvider}
@@ -341,7 +404,34 @@ function App(props) {
             blockExplorer={blockExplorer}
             contractConfig={contractConfig}
           />
+
         </Route>
+        <Route exact path="/debugStaker">
+
+          <Contract
+            name= {"ChaoticStaker"}
+            price={price}
+            signer={userSigner}
+            provider={localProvider}
+            address={address}
+            blockExplorer={blockExplorer}
+            contractConfig={contractConfig}
+          />
+         
+        </Route>        
+
+        <Route exact path="/debugYC">
+
+        <Contract
+          name= {"YourContract"}
+          price={price}
+          signer={userSigner}
+          provider={localProvider}
+          address={address}
+          blockExplorer={blockExplorer}
+          contractConfig={contractConfig}
+        />
+        </Route>     
       </Switch>
 
       <ThemeSwitch />
