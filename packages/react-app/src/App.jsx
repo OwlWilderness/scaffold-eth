@@ -58,7 +58,7 @@ const initialNetwork = NETWORKS.localhost; // <------- select your target fronte
 const defaultContractName = "Chaotic1155";
 
 // 😬 Sorry for all the console logging
-const DEBUG = false;
+const DEBUG = true;
 const NETWORKCHECK = true;
 const USE_BURNER_WALLET = true; // toggle burner wallet feature
 const USE_NETWORK_SELECTOR = false;
@@ -175,7 +175,7 @@ function App(props) {
   //]);
 
   // keep track of a variable from the contract in the local React state:
-  const purpose = useContractReader(readContracts, defaultContractName, "purpose");
+  //const purpose = useContractReader(readContracts, defaultContractName, "purpose");
 
   /*
   const addressFromENS = useResolveName(mainnetProvider, "austingriffith.eth");
