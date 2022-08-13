@@ -25,11 +25,11 @@ pragma solidity 0.8.4;
     import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol"; //do I need this if I am adding the on receive events?
    
     ///ChainLink VRF - random number
-    //import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
-    //import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+    import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
+    import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 
 ///
-contract ChaoticStaker is Ownable, ERC1155Holder {//, VRFConsumerBaseV2  {
+contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
     
     string public name = "ChaoticStaker";
 
@@ -73,7 +73,7 @@ contract ChaoticStaker is Ownable, ERC1155Holder {//, VRFConsumerBaseV2  {
 //external contracts...
 //
     ERC1155 public Erc1155Contract;
-    //VRFCoordinatorV2Interface COORDINATOR;
+    VRFCoordinatorV2Interface COORDINATOR;
 
 //events...
 //
@@ -119,10 +119,10 @@ contract ChaoticStaker is Ownable, ERC1155Holder {//, VRFConsumerBaseV2  {
     ///@param erc1155ContractAddress Contract of the ERC 1155 token to stake
     ///@param subscriptionId Chainlink Subscription Id for VRF requests 
     ///@dev vrfCoordinator VRF Cordinator Contract Address
-    constructor(address erc1155ContractAddress, uint64 subscriptionId) { // VRFConsumerBaseV2(vrfCoordinator) {
+    constructor(address erc1155ContractAddress, uint64 subscriptionId) VRFConsumerBaseV2(vrfCoordinator) {
         Erc1155Contract = ERC1155(erc1155ContractAddress);
         
-        //COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
+        COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
         s_subscriptionId = subscriptionId;
     }
 
@@ -485,9 +485,8 @@ contract ChaoticStaker is Ownable, ERC1155Holder {//, VRFConsumerBaseV2  {
             RandomWordsForRequestId[rq] = word;
             return rq ;
         }
-        return 1;
         // Will revert if subscription is not set and funded.
-        /*
+        
         uint256 requestId = COORDINATOR.requestRandomWords(
             keyHash,
             s_subscriptionId,
@@ -496,17 +495,17 @@ contract ChaoticStaker is Ownable, ERC1155Holder {//, VRFConsumerBaseV2  {
             numWords
         );
         return requestId;
-        */
+        
     }
 
-/*
+
     function fulfillRandomWords(
     uint256 requestId,
     uint256[] memory randomWords
     ) internal override {
         RandomWordsForRequestId[requestId] = randomWords;
     }
-*/
+
 ///common 
 //
     //Add withdraw function to transfer ether from the rigged contract to an address
