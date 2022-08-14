@@ -1,31 +1,51 @@
-# toools and links
-### open zeppelin
-- [contract wizard](https://docs.openzeppelin.com/contracts/4.x/wizard)
-- [erc-1155 docs](https://docs.openzeppelin.com/contracts/3.x/erc1155)
-### varcel
-used to host metadata
-- [varcel](https://vercel.com/dashboard)
+# Chaotic 1155 Staker User Interface Repo
 
-### chainlink
-- [vrf](https://docs.chain.link/docs/chainlink-vrf/)
-- [polygon matic datafeeds](https://docs.chain.link/docs/matic-addresses/)
+This repo contains the latest UI code for the Chaotic 1155 Staker 
 
-### solidity 
-- [bit shift operator >>=](https://ethereum.stackexchange.com/questions/94675/what-does-the-operator-do-in-solidity)
+### Contract Code Github Repo
+- [chaotic-1155-staker](https://github.com/OwlWilderness/scaffold-eth/tree/chaotic-1155-staker)
 
-### svg
-- [w3schools SVG Intro](https://www.w3schools.com/graphics/svg_intro.asp)
+### Contracts on Mumbai
+- Chaotic Staker Contract: [0xe70C45Ff0B527874eF1A737738E59da5e7dC61Ad](0xe70C45Ff0B527874eF1A737738E59da5e7dC61Ad)
+- Chaotic 1155 Token Contract: [0x2e384f7b541d36c0fa6bf4ec270b394a00ceb914](https://mumbai.polygonscan.com/address/0x2e384f7b541d36c0fa6bf4ec270b394a00ceb914)
 
-### types
-- [string concat](https://dev.to/hannudaniel/concatenate-two-strings-on-the-blockchain-using-solidity-smart-contracts-new-feature-in-v0812-549g)
+## App Home
+### Contract Controls
+- Is Approved Label - True if staker contract can transfer your 1155 tokens
+- Approve Chaotic Staker Button - Click to allow Chaotic Staker contract to transfer your Chaotic 1155 tokens. NOTE: 1155 uses setApprovalfofAll
+- Contract Address - Click address to open on mumbai.polyscan.com. Click copy icon to copy
+- Revoke Chaotic Staker Button - Click to disallow Chaotic Staker contract to transfer your Chaotic 1155 tokens.
+- Amount to Mint Textbox - Enter amount of NEW token to mint (will assign max token id + 1). NOTE: must be integer
+- Mint Item Button - Click to mint NEW Chaotic 1155 token. (total price will be displayed)
+### Chaotic 1155 Token Gallery 
+- Displays All Chaotic 1155 Tokens 
+- Controls for each token card apply to the token id contained in the card
+### Chaotic 1155 Token Card
+- Chaotic 1155 NFT Image - Click image to open on Opensea
+- SOS Label - Displays Total Supply, How many connected Account Owns and How many Connected Account has staked
+- Amount to Mint Textbox - Enter Amount of Addtional tokens to mint. NOTE: must be integer
+- Mint More Button - Click to mint additional tokens (total price will be displayed)
+- Amount to Stake Textbox - Enter amount of this token to stake (staking periods not always available ) NOTE: requires approval of contract
+- Stake - Click to Stake tokens (only avaialbe during staking seasons before withdrawal time starts)  NOTE: requires approval of contract
+- Unstake All Button - Click to Unstake tokens (only avaialbe during staking seasons and after withdrawal time starts and before claim deadline) 
 
-### hardhat
-- [compiler version error](https://backbencher.dev/articles/solved-error-hh606-solidity-version-pragma-statement)
+## My Tokens
+- Displays Gallery of Tokens that the accounts owns
+- Uses same Card and contrals as the ALL Token Gallery 
 
-### solidity
-- [base64 encode/decode](https://www.digitalocean.com/community/tutorials/how-to-encode-and-decode-strings-with-base64-in-javascript)
+## Debug 1155
+- Allows Contract interaction with Chaotic 1155 Contract
 
-# 🏗 Scaffold-ETH
+## Debug Staker
+- Allows Contract iteraction with Chaotic Staker Contract
+
+## Debug YC
+- Allow Contract interaction with YourContract Contract (default Scaffold-Eth contract) 
+
+
+![image](https://user-images.githubusercontent.com/98717833/184552510-159caaab-b258-4466-bbb4-73fceb99ce21.png)
+
+# 🏗 Build With Scaffold-ETH
 
 > everything you need to build on Ethereum! 🚀
 
