@@ -1,29 +1,65 @@
-# toools and links
-### open zeppelin
-- [contract wizard](https://docs.openzeppelin.com/contracts/4.x/wizard)
-- [erc-1155 docs](https://docs.openzeppelin.com/contracts/3.x/erc1155)
-### varcel
-used to host metadata
-- [varcel](https://vercel.com/dashboard)
+# Chaotic 1155 Staker Contract Repo
 
-### chainlink
-- [vrf](https://docs.chain.link/docs/chainlink-vrf/)
-- [polygon matic datafeeds](https://docs.chain.link/docs/matic-addresses/)
+DEMO: [https://chaotic-1155-staker.surge.sh/](https://chaotic-1155-staker.surge.sh/)
 
-### solidity 
-- [bit shift operator >>=](https://ethereum.stackexchange.com/questions/94675/what-does-the-operator-do-in-solidity)
+- This repo contains the latest contract code for the Chaotic 1155 Staker
+- This repo contains the original working UI code however the read contracts stopped working so it may or may not work when cloning
+- Note: for working ui code see the [Chaotic 1155 Staker User Interface Repo](https://github.com/OwlWilderness/scaffold-eth/tree/chaotic-1155-staker-3)
 
-### svg
-- [w3schools SVG Intro](https://www.w3schools.com/graphics/svg_intro.asp)
+### Github Repositories
+- CONTRACT repo: [chaotic-1155-staker](https://github.com/OwlWilderness/scaffold-eth/tree/chaotic-1155-staker) - use for smart contract updates
+- UI repo: [chaotic-1155-staker-3](https://github.com/OwlWilderness/scaffold-eth/tree/chaotic-1155-staker) - use for ui updates
 
-### types
-- [string concat](https://dev.to/hannudaniel/concatenate-two-strings-on-the-blockchain-using-solidity-smart-contracts-new-feature-in-v0812-549g)
+### Contracts on Mumbai
+- Chaotic Staker Contract: [0xe70C45Ff0B527874eF1A737738E59da5e7dC61Ad](https://mumbai.polygonscan.com/address/0xe70C45Ff0B527874eF1A737738E59da5e7dC61Ad#code)
+- Chaotic 1155 Token Contract: [0x2e384f7b541d36c0fa6bf4ec270b394a00ceb914](https://mumbai.polygonscan.com/address/0x2e384f7b541d36c0fa6bf4ec270b394a00ceb914#code)
 
-### hardhat
-- [compiler version error](https://backbencher.dev/articles/solved-error-hh606-solidity-version-pragma-statement)
+## YourContract Contract
+- payable with withdraw to account for owner
+- set purpose of this dapp 
 
-### solidity
-- [base64 encode/decode](https://www.digitalocean.com/community/tutorials/how-to-encode-and-decode-strings-with-base64-in-javascript)
+## Chaotic1155 Contract
+- ERC 1155 Ownable Burnable Supply name:Chaotic1155 symbol:KTC1155
+- On Chain Metadata
+
+### Contract Owner Controlers
+- SetPrice _price - set price to mint each token
+- SetMaxTokenId newMax - set new max token id for collection (default:32)
+- SetMaxForTokenId newMax - set new max mint amount for token id (default:10240)
+
+### Token Owner Controllers
+- SetSvgStrings id strCount [svgStrings] - set svg strings and count of strings for token id
+- SetAttributes id newAttributes append - append or set new metadata attributes for token id
+
+### Public Controllers
+- mintItem amount - mint new token up to the max token id of collection for the amount specified
+- mint account id amount - mint the specified amount of token id to account
+
+## ChaoticStaker Contract
+- ChaoticStaker [Ownable](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol),  [ECR1155Holder](https://docs.openzeppelin.com/contracts/3.x/api/token/erc1155#ERC1155Holder), [VRFConsumerBaseV2](https://docs.chain.link/docs/chainlink-vrf/)
+```
+///@notice   stake 1155 tokens and potentially receive random (chainlink vrf) tokens upon withdraw
+///          started as the alchmeny road to web 3 week 6 challenge but modfied to align with dev goals     
+```
+### Contract Owner Controllers
+- EnableRewards - Toggle staking rewards
+- SetErc1155MaxToken - Set Max Token Id this contract will stake (alternativly transfer max token id to contract)
+- SetErc1155Contract - Set Address of ERC 1155 token contract uses (contract must be emtpy)
+- EnableVRF - Enable Chainlink VRF to determine random token id that is transferd duing Unstaking
+- EnableRandomness - Enable Random token unstaking - will use deterministic randomness if VRF is not enabled
+- ResetDeadlines - Resets withdraw and claim deadlines so staking can occur (new deadlines ResetTime + deadlineSeconds)
+- SetWithdrawSeconds - Sets withdraw Deadline seconds - (staking can occur up to this deadline)
+- SetClaimDeadlineSeconds - Sets Claim Deadline seconds - (claiming can occur up to this dealine)
+- withdrawTokens - withdraw ERC 1155 tokens after contract completion (sets the empty flag)
+- withdraw - withdraw matic amount to account
+
+### Token Owner Controllers
+- Stake - Stake an amount of token id (can occur up to the withdrawal deadline)
+- Unstake - Unstake All tokens of id (can occur up to claim dealdine)
+
+### Public Controllers
+- execute - Clear all balances and complete stake (claim dealine must be reached)
+
 
 # 🏗 Scaffold-ETH
 
