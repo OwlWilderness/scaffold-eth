@@ -2,12 +2,13 @@
 
 This repo contains the latest UI code for the Chaotic 1155 Staker 
 
-### Contract Code Github Repo
-- [chaotic-1155-staker](https://github.com/OwlWilderness/scaffold-eth/tree/chaotic-1155-staker)
+### Github Repositories
+- CONTRACT repo: [chaotic-1155-staker](https://github.com/OwlWilderness/scaffold-eth/tree/chaotic-1155-staker) - use for smart contract updates
+- UI repo: [chaotic-1155-staker-3](https://github.com/OwlWilderness/scaffold-eth/tree/chaotic-1155-staker) - use for ui updates
 
 ### Contracts on Mumbai
-- Chaotic Staker Contract: [0xe70C45Ff0B527874eF1A737738E59da5e7dC61Ad](0xe70C45Ff0B527874eF1A737738E59da5e7dC61Ad)
-- Chaotic 1155 Token Contract: [0x2e384f7b541d36c0fa6bf4ec270b394a00ceb914](https://mumbai.polygonscan.com/address/0x2e384f7b541d36c0fa6bf4ec270b394a00ceb914)
+- Chaotic Staker Contract: [0xe70C45Ff0B527874eF1A737738E59da5e7dC61Ad](https://mumbai.polygonscan.com/address/0xe70C45Ff0B527874eF1A737738E59da5e7dC61Ad#code)
+- Chaotic 1155 Token Contract: [0x2e384f7b541d36c0fa6bf4ec270b394a00ceb914](https://mumbai.polygonscan.com/address/0x2e384f7b541d36c0fa6bf4ec270b394a00ceb914#code)
 
 ## App Home
 ### Contract Controls
