@@ -24,7 +24,7 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
 //Usings...
 //
     using Counters for Counters.Counter;
-
+    using ToColor for bytes3;
 //Mappings...
 //
     //svg  
@@ -142,7 +142,10 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
 
     function Initialize(uint id) internal {
         SvgStringCount4Token[id] = 2;
-        SvgStringNum4Token[id][1] = string(abi.encodePacked('<circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="purple" />'));
+        bytes32 predictableRandom = keccak256(abi.encodePacked( blockhash(block.number-1), msg.sender, address(this), id ));
+        bytes3 colorBytes = bytes2(predictableRandom[0]) | ( bytes2(predictableRandom[1]) >> 8 ) | ( bytes3(predictableRandom[2]) >> 16 );
+        
+        SvgStringNum4Token[id][1] = string(abi.encodePacked('<circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="#',colorBytes.toColor(),'" />'));
         SvgStringNum4Token[id][2] = string(abi.encodePacked('<text x="40" y="55" fill="yellow">',uint2str(id),'</text>'));
     }
 
@@ -255,6 +258,7 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
         return strSvg;
     }
 
+
 ///common 
 //
     //Add withdraw function to transfer ether from the rigged contract to an address
@@ -286,3 +290,17 @@ contract Chaotic1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
     //    return this.onERC1155BatchReceived.selector;
     //}
 }
+//library
+//
+    library ToColor {
+        bytes16 internal constant ALPHABET = '0123456789abcdef';
+
+        function toColor(bytes3 value) internal pure returns (string memory) {
+            bytes memory buffer = new bytes(6);
+            for (uint256 i = 0; i < 3; i++) {
+                buffer[i*2+1] = ALPHABET[uint8(value[i]) & 0xf];
+                buffer[i*2] = ALPHABET[uint8(value[i]>>4) & 0xf];
+            }
+            return string(buffer);
+        }
+    }

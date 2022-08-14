@@ -3,20 +3,18 @@ pragma solidity 0.8.4;
 
 /*
 ///@title    Chaotic Staker app for ERC 1155 Tokens
-///@author   quantumtekh.ethe
-///@repo:    https://github.com/OwlWilderness/scaffold-eth/tree/r2w3-challenge-6-staking-dapp
+///@author   quantumtekh.eth
+///@repo:    https://github.com/OwlWilderness/scaffold-eth/tree/chaotic-1155-staker
 
 ///@notice   stake 1155 tokens and potentially receive random (chainlink vrf) tokens upon withdraw
 ///          started as the alchmeny road to web 3 week 6 challenge          
-
-///@dev      Any extra details                           Contract, Interfaces, Functions
-///@param    parameter type followed by parameter name   Functions
-///@return   return value of a function                  Functions
-
 */
 
 ///imports...
 ///
+    //Debug
+    import "hardhat/console.sol";
+
     //Access
     import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -88,7 +86,6 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
 
     mapping(uint => address) public AllStakers; // id for address => address
     mapping(address => uint) public AllStakersLookup; // address => id for address
-    mapping(uint => uint) public RandIdxForTokenId; //index for random returns => token id
   
     //VRF Random Values for Each Token 
     mapping(uint256 => uint256[]) public RandomWordsForRequestId;  //requestid => randomwords
@@ -104,7 +101,6 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
     uint256 public claimDeadline = block.timestamp + SecondsClaimDeadline; 
     uint256 public currentBlock = 0;
     
-    uint public RandIdx = 0;
     uint public NumberOfStakers = 0;
     bool public UseVRF = false;             //use chainlink VRF
     bool public UseRandomness = true;       //if Use VRF = false randomness will be based of block timestamp
@@ -151,23 +147,6 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
         return RandomWordsForRequestId[req];
     }
 
-    ///@notice shrink a memory array to new size
-    ///@param arr The array to shrink
-    ///@param newLen The new length of the array (must be less than arr length)
-    ///@return newArr The shrunked array
-    function shrinkArray(uint[] memory arr, uint newLen) private pure returns (uint[] memory newArr){
-        if(newLen < arr.length){
-            return arr;
-        }
-        uint[] memory rArr = new uint[](newLen);
-
-        for(uint i = 0; i < newLen; ++i){
-            rArr[i] = arr[i];
-        }
-
-        return rArr;
-    }    
-
 //contract controllers...
 //
     ///@notice Toggle Enable Staking Rewards
@@ -201,6 +180,7 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
 
     ///@notice Rest Withdrawel and Claim Deadlines
     function ResetDeadlines() public onlyOwner {
+        completed = false;
         withdrawalDeadline = block.timestamp + SecondsWithdraw; 
         claimDeadline = block.timestamp + SecondsClaimDeadline;        
     }
@@ -224,6 +204,7 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
 
 //staking controllers
 //
+
     ///@notice Stake function for a user to stake ETH in our contract 
     ///@dev require non zero staking amount and a sufficient balance of the sender 
     ///@dev this contract must be approved for to transfer tokens 
@@ -235,22 +216,10 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
         require(Erc1155Contract.balanceOf(msg.sender,id) >= amount, "deposit amount exceeds tokenId balance");
         require(Erc1155Contract.isApprovedForAll(msg.sender, address(this)), "staker not approved to transfer tokens");
 
-        //increase max token if we see a bigger token - what do we do 
-        //is there a standard pattern for 
-        if(id > Erc1155MaxTokenId){
-            Erc1155MaxTokenId = id;
-        }
-
         if(UseRandomness){
             ///request random words for this token
             uint256 requestId = requestRandomWords();
             RequestIdForTokenId[msg.sender][id] = requestId;
-         
-            ///if this contract does not have a balance of for this token id add this token to the mapping of available tokens.
-            if(!(Erc1155Contract.balanceOf(address(this), id) > 0)){
-                RandIdx = RandIdx + 1;
-                RandIdxForTokenId[RandIdx] = id;
-            }
         }
 
         ///try to transfer tokens from the sender to this contract
@@ -283,6 +252,11 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
         ///get token ids and ammounts for withdrawel
         (uint[] memory ids, uint[] memory amts, uint totalAmt, uint xfrAmt) = GetIdsAndAmtsToXfer(id);
 
+        console.log("post shrink: alen", ids.length);
+        for(uint i = 0; i < ids.length; ++i){
+            console.log("id:", ids[i], "amt:", amts[i]);
+        }
+
         try Erc1155Contract.safeBatchTransferFrom(address(this), msg.sender, ids, amts, "") {
             if (xfrAmt < totalAmt ){
                 balances[msg.sender][id] = totalAmt - xfrAmt;
@@ -310,24 +284,34 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
 
 //views
 //
+    ///@notice gets ids and amounts to transfer during for the unstaking
+    ///@param id Original Staked token id
+    ///@return ids Ids to transfer to staker - potentially random if Randomness is enabled
+    ///@return amts Amount for associated token id to transfer to staker
+    ///@return totalAmt Total Amount + Rewards that the staker is entitled to
+    ///@return xferAmt Actual Amount transfered to staker 
     function GetIdsAndAmtsToXfer(uint id) private view returns (uint[] memory ids, uint[] memory amts, uint totalAmt, uint xferAmt){
         uint individualBalance = balances[msg.sender][id];
         uint randTokenId = GetRandomTokenId(msg.sender, id);
         uint indBalanceRewards = individualBalance + getRewardAmount(id);
 
-        ids = new uint[](Erc1155MaxTokenId);
-        amts = new uint[](Erc1155MaxTokenId);
-        uint actualLen = 0;
+        ids = new uint[](Erc1155MaxTokenId + 1);
+        amts = new uint[](Erc1155MaxTokenId + 1);
 
-        uint bal = Erc1155Contract.balanceOf(address(this),randTokenId);
+        uint actualLen = 0;
         uint allocated = 0;
+        uint bal = Erc1155Contract.balanceOf(address(this),randTokenId);
+
 
         if( bal >= indBalanceRewards){
+            ///if the balance covers the amount return all of that token.
             ids[actualLen] = randTokenId;
             amts[actualLen] = indBalanceRewards;
             allocated = indBalanceRewards;
             actualLen = 1;
+            
         } else {
+            ///if the balance of the token id is insufficent look for other tokens
             uint toAllocate = indBalanceRewards;
             if(bal > 0){
                 ids[actualLen] = randTokenId;
@@ -337,12 +321,13 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
                 allocated = bal;
                 actualLen = actualLen + 1;
             }
+
             for(uint i = 1; i <= Erc1155MaxTokenId; ++i) {
-                if(randTokenId + i <= Erc1155MaxTokenId) {
-                    randTokenId = randTokenId + i;
-                } else if(randTokenId > i) {
-                    randTokenId = randTokenId + i - Erc1155MaxTokenId;
+                randTokenId = randTokenId + 1;
+                if(randTokenId > Erc1155MaxTokenId) {
+                    randTokenId = randTokenId - Erc1155MaxTokenId ;
                 }
+                console.log("i:",i,"id:",randTokenId);
                 bal = Erc1155Contract.balanceOf(address(this),randTokenId);
                 if(bal > 0){
                     ids[actualLen] = randTokenId;
@@ -358,29 +343,41 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
                         actualLen = actualLen + 1;
                     }
                 }
+
             }
         }
-
-        ids = shrinkArray(ids, actualLen);
-        amts = shrinkArray(amts, actualLen);  
-
-        return (ids, amts, indBalanceRewards, allocated);   
+        console.log("pre shrink: alen", ids.length);
+        uint[] memory rIds = new uint[](actualLen);
+        uint[] memory rAmts = new uint[](actualLen);
+        uint c = 0;
+        for(uint i = 0; i < actualLen; ++i) {
+            if(ids[i] > 0){
+                rIds[c]=ids[i];
+                rAmts[c]=amts[i];
+                c++;
+            }
+        }
+        return (rIds, rAmts, indBalanceRewards, allocated);   
     }
 
-    function GetRandomTokenId(address addr, uint id) public view returns (uint){
+    ///@notice Get random token for staked token id and address
+    ///@param addr Address of staker
+    ///@param id Token ID that is staked
+    ///@return randomId Random token Id to transfer
+    function GetRandomTokenId(address addr, uint id) public view returns (uint randomId){
         if(UseRandomness){
             uint256[] memory words = GetWordsForId(addr, id);
             if (words.length > 0){
-                uint256 modWord = (words[0] % RandIdx) + 1;
-                uint tokenId = RandIdxForTokenId[modWord];
-                if(Erc1155Contract.balanceOf(address(this), id) > 0){
-                    return tokenId;
-                }
+                uint256 tokenId = (words[0] % Erc1155MaxTokenId) + 1;
+                return tokenId;
             }
         } 
         return id;
     }
 
+    ///@notice get reward amount based on days started
+    ///@param id token id that is staked
+    ///@return uint reward amount
     function getRewardAmount(uint id) internal view returns (uint) {
 
         if(!GiveRewards){
@@ -402,6 +399,8 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
 
 //public views..
 //
+    ///@notice get withdrawal time left
+    ///@return withdrawalTimeLeft withdrawal time left
     function withdrawalTimeLeft() public view returns (uint256 withdrawalTimeLeft) {
         if( block.timestamp >= withdrawalDeadline) {
         return (0);
@@ -410,6 +409,8 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
         }
     }
 
+    ///@notice get claimPeriod time left
+    ///@return claimPeriodLeft claimPeriod time left
     function claimPeriodLeft() public view returns (uint256 claimPeriodLeft) {
         if( block.timestamp >= claimDeadline) {
         return (0);
@@ -420,6 +421,8 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
 
 //modifiers...
 //
+    ///@notice Widthdrawal Deadline reached or not modifiers
+    ///@param requireReached Require withdraw time reached else require time remaining
     modifier withdrawalDeadlineReached( bool requireReached ) {
         uint256 timeRemaining = withdrawalTimeLeft();
         if( requireReached ) {
@@ -430,6 +433,8 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
         _;
     }
 
+    ///@notice claimDeadline Deadline reached or not modifiers
+    ///@param requireReached Require claimDeadline time reached else require time remaining
     modifier claimDeadlineReached( bool requireReached ) {
         uint256 timeRemaining = claimPeriodLeft();
         if( requireReached ) {
@@ -440,17 +445,18 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
         _;
     }
 
+    ///@notice require staking not completed
     modifier notCompleted() {
         require(!completed, "Stake already completed!");
         _;
     }
 
-    //withdraw all tokens that are not staked
+    ///@notice withdraw all tokens after staking completed
     function withdrawTokens() public onlyOwner {
         require(completed, "stake not completed");
 
-        uint[] memory ids = new uint[](Erc1155MaxTokenId);
-        uint[] memory amts = new uint[](Erc1155MaxTokenId);
+        uint[] memory ids = new uint[](Erc1155MaxTokenId+1);
+        uint[] memory amts = new uint[](Erc1155MaxTokenId+1);
         uint actualLen = 0;
 
         for(uint i = 1; i <= Erc1155MaxTokenId; ++i){
@@ -462,8 +468,8 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
             }
         }
 
-        ids = shrinkArray(ids, actualLen);
-        amts = shrinkArray(amts, actualLen);
+        //ids = shrinkArray(ids, actualLen);
+        //amts = shrinkArray(amts, actualLen);
 
         try Erc1155Contract.safeBatchTransferFrom(address(this), msg.sender, ids, amts, "") {
             empty = false;
@@ -475,7 +481,10 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
     }
 
 // vrf functions...
-    // Assumes the subscription is funded sufficiently.
+    ///@notice Request Random words\
+    ///@dev uf not using vrf generate predictable Random words
+    ///@dev if using VRF - Assumes the subscription is funded sufficiently.
+    ///@return uint256 Random Word Request ID
     function requestRandomWords() internal returns(uint256) {
         if(!UseVRF){
             bytes32 predictableRandom = keccak256(abi.encodePacked( blockhash(block.number-1), msg.sender, address(this) ));
@@ -486,7 +495,6 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
             return rq ;
         }
         // Will revert if subscription is not set and funded.
-        
         uint256 requestId = COORDINATOR.requestRandomWords(
             keyHash,
             s_subscriptionId,
@@ -495,10 +503,11 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
             numWords
         );
         return requestId;
-        
     }
 
-
+    ///@notice if VRF fulfill random word request from VRF Coordinator
+    ///@param requestId request ID that this fullfilment is assocated with
+    ///@param randomWords random words from VRF Coordinator
     function fulfillRandomWords(
     uint256 requestId,
     uint256[] memory randomWords
@@ -508,27 +517,72 @@ contract ChaoticStaker is Ownable, ERC1155Holder, VRFConsumerBaseV2  {
 
 ///common 
 //
-    //Add withdraw function to transfer ether from the rigged contract to an address
+
+    ///@notice withdraw function to transfer ether from the contract to an address
+    ///@param _addr Address to witdraw the funds to
+    ///@param _amount Amount to withdraw
     function withdraw(address _addr, uint256 _amount) public onlyOwner{
         require(address(this).balance >= _amount, "amount exceeds funds");
         (bool sent, ) = _addr.call{value: _amount}("");
         require(sent, "Failed to send ");
     }
 
-    // to support receiving ETH by default
+    ///@notice to support receiving ETH by default
     receive() external payable {}
     fallback() external payable {}
 
 //ERC1155 receiver implementation...
 // do not need if importing ERC1155Holder
 
-    function onERC1155Received(address, address, uint256, uint256, bytes memory) public override returns (bytes4) {
+    /**
+     * @dev Handles the receipt of a single ERC1155 token type. This function is
+     * called at the end of a `safeTransferFrom` after the balance has been updated.
+     *
+     * NOTE: To accept the transfer, this must return
+     * `bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))`
+     * (i.e. 0xf23a6e61, or its own function selector).
+     *
+     * @param operator The address which initiated the transfer (i.e. msg.sender)
+     * @param from The address which previously owned the token
+     * @param id The ID of the token being transferred
+     * @param value The amount of tokens being transferred
+     * @param data Additional data with no specified format
+     * @return `bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))` if transfer is allowed
+     */
+    function onERC1155Received(address operator, address from, uint256 id, uint256 value, bytes memory data) public override returns (bytes4) {
         empty = false;
+
+        //increase max token if we see a bigger token 
+        if(id > Erc1155MaxTokenId){
+            Erc1155MaxTokenId = id;
+        }        
         return this.onERC1155Received.selector;
     }
 
-    function onERC1155BatchReceived(address, address, uint256[] memory, uint256[] memory, bytes memory) public override returns (bytes4) {
+    /**
+     * @dev Handles the receipt of a multiple ERC1155 token types. This function
+     * is called at the end of a `safeBatchTransferFrom` after the balances have
+     * been updated.
+     *
+     * NOTE: To accept the transfer(s), this must return
+     * `bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))`
+     * (i.e. 0xbc197c81, or its own function selector).
+     *
+     * @param operator The address which initiated the batch transfer (i.e. msg.sender)
+     * @param from The address which previously owned the token
+     * @param ids An array containing ids of each token being transferred (order and length must match values array)
+     * @param values An array containing amounts of each token being transferred (order and length must match ids array)
+     * @param data Additional data with no specified format
+     * @return `bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))` if transfer is allowed
+     */
+    function onERC1155BatchReceived(address operator, address from, uint256[] memory ids, uint256[] memory values, bytes memory data) public override returns (bytes4) {
         empty = false;
+        for(uint i = 0; i < ids.length; ++i) {
+            //increase max token if we see a bigger token
+            if(i > Erc1155MaxTokenId){
+                Erc1155MaxTokenId = i;
+            }
+        }
         return this.onERC1155BatchReceived.selector;
     }
 
