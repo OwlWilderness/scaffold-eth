@@ -1,3 +1,15 @@
+# txn token
+
+## overview
+
+## use case
+create a transaction token - send to another account to execute - image of token indicates status of txn
+
+token with the following:
+- transaction to be executed
+- human readable metadata of transaction info
+- svg image indicating status of txn
+
 # 🏗 Scaffold-ETH
 
 > everything you need to build on Ethereum! 🚀
