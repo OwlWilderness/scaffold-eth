@@ -27,7 +27,7 @@ const { isAddress, getAddress, formatUnits, parseUnits } = utils;
 //
 // Select the network you want to deploy to here:
 //
-const defaultNetwork = "localhost";
+const defaultNetwork = "mumbai";
 
 const mainnetGwei = 21;
 
@@ -141,7 +141,7 @@ module.exports = {
     mumbai: {
       url: "https://polygon-mumbai.infura.io/v3/58daabf0f6e3462aa9aef8ccb9f4ead4",// "https://rpc-mumbai.maticvigil.com",
       // url: "https://speedy-nodes-nyc.moralis.io/XXXXXXXXXXXXXXXXXXXXXXX/polygon/mumbai", // <---- YOUR MORALIS ID! (not limited to infura)
-      gasPrice: 50000000000,
+      gasPrice: 500000000000,
       accounts: {
         mnemonic: mnemonic(),
       },

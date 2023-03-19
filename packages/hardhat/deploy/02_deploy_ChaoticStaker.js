@@ -19,20 +19,20 @@ module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
 
   const Chaotic1155 = await ethers.getContract("Chaotic1155", deployer);
 
-  await deploy("ChaoticStaker", {
-    // Learn more about args here: https://www.npmjs.com/package/hardhat-deploy#deploymentsdeploy
-    from: deployer,
-    args: [ Chaotic1155.address, 928 ],
-    log: true,
-    waitConfirmations: 5,
-  });
+  //await deploy("ChaoticStaker", {
+  //  // Learn more about args here: https://www.npmjs.com/package/hardhat-deploy#deploymentsdeploy
+  //  from: deployer,
+  //  args: [ Chaotic1155.address, 928 ],
+  //  log: true,
+  //  waitConfirmations: 5,
+  //});
 
   // Getting a previously deployed contract
   const ChaoticStaker = await ethers.getContract("ChaoticStaker", deployer);
 
-  await ChaoticStaker.transferOwnership(
-    "0x7E386FE260C256Ef369d744C6c5a23155f6E2FEe"
-  );
+  //await ChaoticStaker.transferOwnership(
+  //  "0xc90Ecdf38215b20f4CE7A8A1346E32F78cC3B909"
+  //);
   
   /*  await YourContract.setPurpose("Hello");
   
